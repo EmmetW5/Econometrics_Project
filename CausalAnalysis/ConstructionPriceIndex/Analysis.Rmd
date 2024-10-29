@@ -1,0 +1,17 @@
+```{r}
+library(tidyverse)
+constr = read_csv("CONSTR.csv") %>% 
+  filter(year >= 2000)
+
+
+```
+
+```{r}
+constr2 = constr %>% 
+  pivot_longer(c(mspus, constr_price_ind, corrected_price))
+
+ggplot(constr2) +
+  geom_line(aes(x = date, y = value)) +
+  facet_wrap(~ name, ncol = 3, scales = "free")
+```
+

@@ -1,0 +1,12 @@
+The Effect of Zoning on Housing Prices (Kendall & Tulip)
+https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3149272
+- Exogeneity: House price = cost to build + land value + zoning effect
+- Data: Land values from Australian Land Value General
+
+COMMENTS: We can do something similar on a census division level with the construction price index (measure of land value and construction costs). Need to justify that the market is competitive enough that it would clear without zoning: paper contains some references
+
+The Price of Residential Land in Large U.S. cities
+https://www.federalreserve.gov/pubs/feds/2006/200625/200625pap.pdf
+- Data: Freddie Mac CMHPI
+
+COMMENTS: Data useful if a different HPI source needed?
