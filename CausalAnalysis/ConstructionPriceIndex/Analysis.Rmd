@@ -2,16 +2,25 @@
 library(tidyverse)
 constr = read_csv("CONSTR.csv") %>% 
   filter(year >= 2000)
-
-
+```
+```{r}
+states = read_csv("../../CountyData/RealtorDotCom/RDC.csv") %>% 
+  mutate(fips = str_pad(fips, 5, side = "left", pad = 0)) %>% 
+  mutate(state = str_sub(fips, 1, 2)) %>% 
+  group_by(state, year) %>% 
+  summarize(medprice = median(median_listing_price, na.rm = T))
 ```
 
 ```{r}
 constr2 = constr %>% 
-  pivot_longer(c(mspus, constr_price_ind, corrected_price))
+  pivot_longer(c("constr_corrected", "ffr"))
+
+breaks = (constr2$date %>% unique)[seq(1, length(constr$date), by = 6)]
 
 ggplot(constr2) +
   geom_line(aes(x = date, y = value)) +
-  facet_wrap(~ name, ncol = 3, scales = "free")
+  facet_wrap(name ~ ., ncol = 1, scales = "free_y") +
+  scale_x_continuous(breaks = breaks) +
+  theme(axis.text.x = element_text(angle = 90))
 ```
 
