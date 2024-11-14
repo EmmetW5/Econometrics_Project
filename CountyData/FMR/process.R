@@ -10,7 +10,7 @@ lastTwoToYear = function(strings){
 fmr = read_csv("FMR_All_1983_2025.csv") %>% 
   # FIPS codes: First 5 digits are counties
   mutate(fips = str_extract(fips, "\\d{5}")) %>% 
-  select(c(starts_with("fmr"), starts_with("pop"), "fips", "state")) %>%
+  select(c(starts_with("fmr"), "fips", "state")) %>%
   # Each year/bedroom is a column: pivot so rows are county+year
   pivot_longer(starts_with("fmr") & contains("_"), 
                names_prefix = "fmr", names_to = "year", values_to = "fair_market_rent") %>% 
@@ -25,8 +25,7 @@ fmr = read_csv("FMR_All_1983_2025.csv") %>%
   filter(percentile == 40) %>% 
   select(-percentile) %>% 
   group_by(fips, year, bedrooms) %>% 
-  summarize(fair_market_rent = mean(fair_market_rent),
-            across(starts_with("pop"), sum)) %>%
+  summarize(fair_market_rent = mean(fair_market_rent)) %>% 
   pivot_wider(names_from = "bedrooms", values_from = "fair_market_rent", names_prefix = "fmr_")
 
 write_csv(fmr, "FMR.csv")
