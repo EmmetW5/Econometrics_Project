@@ -1,0 +1,89 @@
+---
+title: "Housing Forecasting"
+author: "Emmet Whitehead"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lmtest)
+```
+
+## Introduction
+
+In addition to the causal analysis portion of the project, we additionally attempt forecasting housing prices. This notebook walks through our methadology and discusses results.
+
+
+## Data Preparation
+
+```{r, data_loading, echo=FALSE}
+
+### This is basically the unify.R script that Mohamed wrote. It is currently missing the ACS data as I cant find it...
+
+
+setwd("~/GitHub/Econometrics_Project/CountyData")
+
+table_files = list(
+  "fmr" = "FMR/FMR.csv",
+  "rdc" = "RealtorDotCom/RDC.csv",
+  "nrc" = "NewResidentialConstruction/NRC.csv",
+  "acs" = "ACS/ACS.csv"
+)
+
+counties = table_files %>% 
+  map(read_csv) %>% 
+  map(\(x) mutate(x, fips = as.character(fips))) %>% 
+  reduce(inner_join, c("fips", "year"))
+
+
+summary(counties)
+
+```
+
+
+Taking a look at the summary of the dataset we see that each observation is by FIPS code, analogous to counties. We have many median listing features, as well as years, unit counts, house features averaged by county, and the fair market rent for different quartiles.
+
+
+## Forecasting Problem
+
+For this forecasting problem, we will be predicting the average listing price of houses in a given FIPS region. To do so, a train and test split of the data will be created, and prices will be predicted using the other features in the dataset. I will use the years 2016-202 as training data, and reserve the latter two years for testing. Additionally, to correctly forecast the average listing price, we need to remove features that convey the same information (for example, median_listing_price_per_square_foot).
+
+```{r, train_test}
+
+omit_vars = c("median_listing_price_per_square_foot", "median_listing_price", "fips") # removing FIPS for now, need to find a way to deal with this and not get 100s of dummy vars
+
+train_data = counties %>% 
+  filter(year >= 2016 & year <= 2020) %>%
+  select(-all_of(omit_vars))
+
+test_data = counties %>% 
+  filter( year >= 2021)%>%
+  select(-all_of(omit_vars))
+
+```
+
+
+Lets begin with some basic techniques, the most principal of which is OLS regression.
+
+```{r, OLS, echo=FALSE}
+
+OLS_model = lm(average_listing_price ~ ., data=train_data)
+
+#coeftest(OLS_model)
+
+summary(OLS_model)
+
+
+```
+
+
+
+
+
+
+
+
+
+
