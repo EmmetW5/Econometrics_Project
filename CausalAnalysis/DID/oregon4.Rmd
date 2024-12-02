@@ -1,0 +1,56 @@
+```{r}
+library(tidyverse)
+library(didimputation)
+
+zori = read_csv("ZORI.csv") %>% 
+  rename(name = RegionName) %>% 
+  filter(str_detect(name, ", OR") | str_detect(name, "ID"),
+         RegionType == "msa") %>% 
+  pivot_longer(!(1:5), names_to = "date", values_to = "zori") %>% 
+  select(-c(RegionType, RegionID, SizeRank)) %>% 
+  mutate(date = ymd(date) + period(1, "day"))
+
+bill_dates = tribble(
+  ~name, ~treat_date,
+  "Portland, OR", "2022-07-01",
+  "Medford, OR", "2022-07-01",
+  "Salem, OR", "2022-03-01",
+  "Corvallis, OR", "2022-06-01",
+  "Eugene, OR", "2022-07-01"
+) %>% 
+  mutate(treat_date = ymd(treat_date))
+```
+
+```{r}
+time_periods = zori %>% 
+  select(date) %>% 
+  distinct() %>% 
+  arrange(date) %>% 
+  mutate(time_period = row_number())
+
+treat_periods = time_periods %>% 
+  rename(treat_period = time_period,
+         treat_date = date)
+
+zori_es = zori %>% 
+  filter(name %in% bill_dates$name) %>% 
+  left_join(bill_dates) %>% 
+  left_join(time_periods) %>% 
+  left_join(treat_periods) %>% 
+  distinct(name, date, .keep_all = T) %>% 
+  filter(time_period > 12) %>% 
+  mutate(year = year(date),
+         post1 = year >= 2023,
+         post2 = year >= 2024,
+         treated = !is.na(treat_period),
+         dateFac = as.factor(date))
+```
+```{r}
+ggplot(zori_es %>% group_by(StateName, date) %>% summarize(zori = mean(zori, na.rm = T))) + 
+  geom_line(aes(x = date, y = zori, color = StateName))
+```
+
+```{r}
+lm(zori ~ post2*treated + name + dateFac, zori_es) %>% 
+  summary()
+```

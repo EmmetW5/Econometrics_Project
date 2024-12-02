@@ -1,0 +1,48 @@
+```{r}
+library(tidyverse)
+library(didimputation)
+
+rdc = read_csv("RDC.csv") %>% 
+  filter(state == "OR") %>% 
+  rename(price = median_listing_price_per_square_foot)
+
+bill_dates = tribble(
+  ~cbsa_title, ~treat_date,
+  "Albany-Lebanon, OR", "2022-01-01",
+  "Portland-Vancouver-Hillsboro, OR-WA", "2022-07-01",
+  "Medford, OR", "2022-07-01",
+  "Salem, OR", "2022-03-01",
+  "Corvallis, OR", "2022-06-01",
+  "Grants Pass, OR", NA,
+  "Eugene-Springfield, OR", "2022-07-01"
+) %>% 
+  mutate(treat_date = ymd(treat_date))
+```
+
+```{r}
+time_periods = rdc %>% 
+  select(date) %>% 
+  distinct() %>% 
+  arrange(date) %>% 
+  mutate(time_period = row_number())
+
+treat_periods = time_periods %>% 
+  rename(treat_period = time_period,
+         treat_date = date) %>% 
+  add_row(treat_period = 0, treat_date = NA)
+
+rdc = rdc %>% 
+  inner_join(bill_dates) %>% 
+  inner_join(time_periods) %>% 
+  inner_join(treat_periods) %>% 
+  distinct(cbsa_title, time_period, .keep_all = T)
+```
+
+
+```{r}
+es = did_imputation(
+  data = rdc , yname = "price", tname = "time_period", idname = "cbsa_title",
+  gname = "treat_period", horizon = TRUE, pretrends = TRUE,
+  first_stage = ~ 1 | cbsa_title + time_period
+)
+```

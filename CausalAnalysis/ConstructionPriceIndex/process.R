@@ -27,15 +27,28 @@ ffr = read_csv("FEDFUNDS.csv") %>%
 mspus = read_csv("MSPUS.csv") %>% 
   rename_with(str_to_lower, everything())
 
+msptfc = read_csv("MSPUS_cash.csv") %>% 
+  rename_with(str_to_lower, everything())
+
+fmr = read_csv("FMR.csv") %>% 
+  filter(pop2010 < 10000) %>% 
+  group_by(year) %>% 
+  summarize(fmr_1 = mean(fmr_1))
+
 constr_data = sold_ind %>% 
   inner_join(mspus) %>%
+  inner_join(msptfc) %>%
   inner_join(constr_ind) %>% 
   inner_join(cpi) %>% 
   inner_join(ffr) %>% 
+  inner_join(fmr) %>% 
   mutate(sold_price_ind = sold_price_ind,
          constr_price_ind = constr_price_ind,
          sold_corrected = (mspus / sold_price_ind),
          constr_corrected = (mspus / constr_price_ind),
+         sold_corrected_cash = (msptfc / sold_price_ind),
+         constr_corrected_cash = (msptfc / constr_price_ind),
+         fmr_corrected = (fmr_1 / constr_price_ind),
          real_ffr = ffr / cpi)
 
 write_csv(constr_data, "CONSTR.csv")

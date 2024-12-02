@@ -1,0 +1,34 @@
+```{r}
+library(tidyverse)
+library(didimputation)
+
+fmr = read_csv("FMR.csv") %>% 
+  rename(name = areaname22) %>% 
+  filter(str_detect(name, " MSA"),
+         year < 2025,
+         year > 2015) %>% 
+  mutate(name = str_remove(name, " MSA"),
+         period = year - min(year),
+         state = str_extract(name, "(?<=, )\\w+"),
+         oregon = as.numeric(state == "OR")) %>% 
+  group_by(state, year) %>% 
+  summarize(fmr_1 = mean(fmr_1, na.rm = T),
+            pop2010 = mean(pop2010, na.rm = T)) %>% 
+  ungroup()
+```
+
+```{r}
+synth = fmr %>%
+  synthetic_control(outcome = fmr_1,
+                    unit = state,
+                    time = year,
+                    i_unit = "OR",
+                    i_time = 2022) %>%
+  generate_predictor(time_window = 2020,
+                     pop2010 = pop2010) %>% 
+  generate_weights() %>%
+  generate_control()
+
+synth %>% 
+  grab_significance()
+```
