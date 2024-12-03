@@ -1,0 +1,73 @@
+```{r}
+library(tidyverse)
+library(tidysynth)
+```
+
+
+```{r}
+states = c("Minnesota", "Wisconsin")
+treat_date = 2019
+treated_unit = "Minneapolis-St. Paul-Bloomington, MN-WI HUD Metro FMR Area"
+
+fmr = read_csv("FMRDC.csv") %>% 
+  filter(year >= 2016, year < 2024) %>% 
+  distinct(year, areaname22, .keep_all = T) %>% 
+  rename(price = fmr_1) %>% 
+  mutate(treated = (areaname22 == treated_unit)) %>% 
+  filter(areaname22 != "Milwaukee-Waukesha-West Allis, WI MSA",
+         str_ends(areaname22, "Area"))
+
+full_obs = fmr %>% 
+  count(areaname22) %>% 
+  filter(n == max(n)) %>% 
+  pull(areaname22)
+
+fmr = filter(fmr, areaname22 %in% full_obs)
+
+if(length(states) > 0) fmr = filter(fmr, statename %in% states)
+```
+
+```{r}
+base_prices = fmr %>% 
+  filter(year == min(year)) %>% 
+  rename(base_price = price) %>% 
+  select(areaname22, base_price)
+  
+fmrsum = fmr %>% 
+  inner_join(base_prices) %>% 
+  group_by(areaname22) %>% 
+  mutate(price_debase = price - base_price) %>% 
+  ungroup() %>% 
+  group_by(year, treated) %>% 
+  summarize(price_debase = mean(price_debase))
+
+ggplot(fmrsum) + 
+  geom_line(aes(x = year, y = price_debase, color = treated))
+```
+
+```{r}
+syntha = fmr %>%
+  synthetic_control(outcome = price,
+                    unit = areaname22,
+                    time = year,
+                    i_unit = treated_unit,
+                    i_time = treat_date)
+
+synthb = syntha %>% 
+  generate_predictor(time_window = 2016,
+                     populat = pop2010,
+                     mdom = median_days_on_market,
+                     nlc = new_listing_count,
+                     plc = pending_listing_count,
+                     pic = price_increased_count,
+                     msf = median_square_feet
+                     ) %>%
+  generate_weights()
+  
+synthc = generate_control(synthb)
+
+plot_trends(synthc)
+
+grab_significance(synthc)
+```
+

@@ -8,7 +8,7 @@ library(tidysynth)
 states = c()
 treat_date = ymd("2022-07-01")
 unit_type = "state"
-treated_unit = "OR"
+treated_unit = "MI"
 
 rdc = read_csv("RDC.csv") %>% 
   distinct(date, cbsa_code, .keep_all = T) %>% 
@@ -53,11 +53,7 @@ synth = rdc %>%
                     time = date,
                     i_unit = treated_unit,
                     i_time = treat_date) %>%
-  generate_predictor(mdom = mean(median_days_on_market, na.rm = T),
-                      pic = mean(price_increased_count, na.rm = T),
-                      prc = mean(price_reduced_count, na.rm = T),
-                      tlc = mean(total_listing_count, na.rm = T),
-                      nlc = mean(new_listing_count, na.rm = T)) %>% 
+  generate_predictor() %>% 
   generate_weights() %>%
   generate_control()
 

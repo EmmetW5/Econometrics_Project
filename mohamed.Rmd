@@ -1,0 +1,87 @@
+```{r}
+library(tidyverse)
+```
+
+## Data and Description
+For rents, we use the data set of Fair Market Rents provided by the U.S. Department of Housing and Urban Development, which provides annual data on the 40th percentile of rent on a county level from 1995 onwards. 
+
+- MSPUS
+- Census construction price cost
+- RDC (Max?)
+
+## Causal Analysis
+
+- House price moves with construction cost (supply and demand curves)
+- Control for construction costs/land values with index
+- If housing market is competitive, expect stability
+
+```{r, message=FALSE}
+constr = read_csv("CausalAnalysis/Final/ConstructionPriceIndex/CONSTR.csv") %>% 
+  filter(year >= 2012)
+
+plotConstrVars = function(vars){
+  constr2 = constr %>% 
+    pivot_longer(all_of(vars))
+  
+  breaks = (constr2$date %>% unique)[seq(1, length(constr$date), by = 6)]
+  
+  ggplot(constr2) +
+    geom_line(aes(x = date, y = value)) +
+    facet_wrap(name ~ ., ncol = 1, scales = "free_y") +
+    scale_x_continuous(breaks = breaks) +
+    theme(axis.text.x = element_text(angle = 90)) 
+}
+
+plotConstrVars("sold_corrected")
+```
+- General trend: stable until 2015, starts trending down. Occasionally spikes, which seems to be from spikes in the housing price:
+```{r}
+plotConstrVars(c("sold_corrected", "sold_price_ind", "mspus"))
+```
+
+- Robust to land values excluded: same general trend
+```{r}
+plotConstrVars("constr_corrected")
+```
+- Affected by mortgages? Cash only. Same general trend but more volatility
+```{r}
+plotConstrVars("sold_corrected_cash")
+```
+- Supply side issues largely to blame for recent increases in housing supply?
+
+## Zoning synthetic controls
+- Minneapolis passes Minneapolis 2040 to eliminate single family zoning. Takes effect 2019
+- Synthetic control approach to determine effects on fair market rent
+- Data from 2016-2019, using US HUD metro areas in Minnesota and Wisconsin to control
+- Parallel trends does not apply
+```{r}
+fmr_synth = read_csv("CausalAnalysis/Final/Minnesota/FMR_synth.csv")
+
+treat_date = 2019
+treated_unit = "Minneapolis-St. Paul-Bloomington, MN-WI HUD Metro FMR Area"
+
+
+synth = fmr_synth %>%
+  synthetic_control(outcome = price,
+                    unit = areaname22,
+                    time = year,
+                    i_unit = treated_unit,
+                    i_time = treat_date) %>% 
+  generate_predictor(time_window = 2016,
+                     populat = pop2010,
+                     mdom = median_days_on_market,
+                     nlc = new_listing_count,
+                     plc = pending_listing_count,
+                     pic = price_increased_count,
+                     msf = median_square_feet
+                     ) %>%
+  generate_weights() %>% 
+  generate_control()
+
+plot_trends(synth)
+
+```
+
+
+TO CITE:
+- All data sources

@@ -51,6 +51,9 @@ ggplot(zori_es %>% group_by(StateName, date) %>% summarize(zori = mean(zori, na.
 ```
 
 ```{r}
-lm(zori ~ post2*treated + name + dateFac, zori_es) %>% 
-  summary()
+es = did_imputation(
+  data = zori_es , yname = "zori", tname = "time_period", idname = "name",
+  gname = "treat_period", horizon = TRUE, pretrends = -(1:10),
+  first_stage = ~ 0 | name + time_period
+)
 ```
