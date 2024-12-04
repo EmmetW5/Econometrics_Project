@@ -132,15 +132,19 @@ some_na <- function(x) any(is.na(x))
 acs <- readRDS("acs.rds")
 ```
 
+```{r, include=FALSE}
+# Set to TRUE to expand R code blocks; set to FALSE to collapse R code blocks 
+show <- FALSE
+```
 
 
 ## ACS Analysis
 
-This section used the detailed data from the American Community Survey (ACS), an annual survey conducted by the U.S. Census Bureau that captures key social, economic, housing, and demographic information across the United States (https://www.census.gov/programs-surveys/acs/). The ACS dataset is a comprehensive resource for understanding the factors influencing rental housing prices. Specifically, the data includes demographic, geographic, and housing information summarized by FIPS (Federal Information Processing Standards) codes, which "[...] are assigned alphabetically by geographic name for states, counties, core based statistical areas, places, county subdivisions, consolidated cities and all types of American Indian, Alaska Native, and Native Hawaiian (AIANNH) areas." (https://www.census.gov/programs-surveys/geography/guidance/geo-identifiers.html) 
+This section used the detailed data from the American Community Survey (ACS), an annual survey conducted by the U.S. Census Bureau that captures key social, economic, housing, and demographic information across the United States (https://www.census.gov/programs-surveys/acs/). The ACS dataset is a comprehensive resource for understanding the factors influencing rental housing prices. Specifically, the data includes demographic, geographic, and housing information as well as the locations from which the data was collected. 
 
 Our analysis seeks to identify the variables that significantly impact rental housing prices and quantify their effect. We focus on demographic factors such as household income, geographic indicators like metropolitan status, and structural features of houses to examine their contributions to rental price variations.
 
-Given the self-reporting status of housing value in the dataset, we concluded that rental prices were a more accurate measure of house value. For this reason, we decided to conduct our analysis using this as our dependent variable. By applying robust statistical methods we provide a deep exploration of the determinants of housing rental prices. This approach assumes that these determinants are strongly correlated, if not identical to, the determinants of housing prices.
+Given the self-reporting status of housing value in the dataset, we concluded that rental prices were a more accurate measure of house value. For this reason, we decided to conduct our analysis using this as our dependent variable. By applying robust statistical methods we provide a deep exploration of the determinants of housing rental prices.
 
 ### Data Description
 
@@ -156,7 +160,7 @@ The dataset used in this study includes observations on rental housing units fro
 
 The data was cleaned to ensure accuracy and consistency. The total number of observations was 56,835,321 with 29 features but after removing rows with missing or NA values for rental price or explanatory variables (76.5%) and selecting important features, we were left with 13,341,750 observations with 15 features. 
 
-The following code block cleans the data:
+We are not including taxincl and insincl because those columns only have zeros. Likewise, we are excluding debt_incurred since it only has FALSE. Finally, year_from_start was removed given it was perfectly correlated with year.
 
 ```{r}
 # Not including taxincl, insincl and debt_incurred because first two only have zero
@@ -168,60 +172,65 @@ data <- acs %>% select(year, density, metro, fips,
                         hhincome,
                         rooms, builtyr2, unitsstr, bedrooms,
                         age, married, male,
-                        complete_plumbing, has_kitchen, cpi_rent) %>%
+                        complete_plumbing, has_kitchen, statefip,
+                       cpi_rent) %>%
   na.omit() %>%
-  mutate(year = as.factor(year)) %>%
-  mutate(fips_state = as.factor(substr(fips, 1, 2))) %>%
-  select(year, density, metro, fips_state, fips,
-                        hhincome,
-                        rooms, builtyr2, unitsstr, bedrooms,
-                        age, married, male,
-                        complete_plumbing, has_kitchen, cpi_rent)
+  mutate(year = as.factor(year))
   
 ```
 
-The dataset includes observations from counties across the United States. However, due to challenges in obtaining complete information and the presence of missing values in the FIPS column, the data is limited to specific counties. These counties are highlighted in red on the map below. While the map may appear significantly incomplete, it is important to note that we have data from every state in the country.
+The dataset contains observations from counties across the United States. However, due to challenges in obtaining complete information and the presence of missing values in the FIPS column, it does not provide a clear representation of individual counties. Instead, we aggregated the data at the state level. The map below highlights the states, with darker shades indicating a higher number of observations in the dataset.
 
-
-```{r, warning=FALSE}
-maps::county.fips %>%
-  as.tibble %>% 
-  extract(polyname, c("region", "subregion"), "^([^,]+),([^,]+)$") ->
-  dfips
-
-map_data("county") %>% 
-  left_join(dfips) ->
-  dall
-
-dall %>% 
-  mutate(is_example = fips %in% data$fips) %>% 
-  ggplot(aes(long, lat, group = group)) +
-  geom_polygon(aes(fill=is_example), color="gray70") +
-  coord_map() +
-  scale_fill_manual(values=c("TRUE"="red", "FALSE"="gray90")) +
-  labs(fill = "Present", x = "Longitude", y = "Latitude")
-```
-
-The following bar graph illustrates the variability between counties for which we have data and those for which we don't. This incomplete coverage motivated us to complement our analysis with data from RealtorDotCom.
 
 ```{r}
-dall %>%
-  mutate(is_present = fips %in% data$fips) %>%
-  group_by(fips, is_present) %>%
-  summarise(
-    count = n(),
-    percentage = (n() / nrow(dall)) * 100
-  ) %>%
-  ggplot(aes(x = is_present, y = count, fill = is_present)) +
-  geom_bar(stat = "identity") +
-  scale_fill_manual(values = c("TRUE" = "steelblue", "FALSE" = "salmon")) +
-  labs(
-    title = "Count and Percentage of Presence and Absence of FIPS",
-    x = "Presence",
-    y = "Count",
-    fill = "Presence"
+# Load the US states map data
+us_states <- map_data("state")
+
+# FIPS to state name mapping
+fips_to_state <- data.frame(
+  statefip = c(01, 02, 04, 05, 06, 08, 09, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+           24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+           42, 44, 45, 46, 47, 48, 49, 50, 51, 53, 54, 55, 56),
+  state = c("alabama", "alaska", "arizona", "arkansas", "california", "colorado",
+            "connecticut", "delaware", "district of columbia", "florida", "georgia",
+            "hawaii", "idaho", "illinois", "indiana", "iowa", "kansas", "kentucky",
+            "louisiana", "maine", "maryland", "massachusetts", "michigan",
+            "minnesota", "mississippi", "missouri", "montana", "nebraska", "nevada",
+            "new hampshire", "new jersey", "new mexico", "new york", "north carolina",
+            "north dakota", "ohio", "oklahoma", "oregon", "pennsylvania", "rhode island",
+            "south carolina", "south dakota", "tennessee", "texas", "utah", "vermont",
+            "virginia", "washington", "west virginia", "wisconsin", "wyoming")
+)
+
+# Join the datasets to convert FIPS to state names
+data <- data %>%
+  left_join(fips_to_state, by = "statefip")
+
+
+# Count the number of times each state appears in the dataset
+state_counts <- data %>%
+  count(state, name = "frequency")
+
+# Join the state counts with the map data
+us_states_data <- us_states %>%
+  mutate(region = as.character(region)) %>%
+  left_join(state_counts, by = c("region" = "state"))
+
+# Create the map
+ggplot(us_states_data, aes(long, lat, group = group, fill = frequency)) +
+  geom_polygon(color = "white", size = 0.2) +
+  scale_fill_gradient(
+    low = "lightblue", 
+    high = "darkblue", 
+    na.value = "lightgray", 
+    name = "Frequency"
   ) +
-  theme_minimal()
+  theme_void() +
+  labs(
+    title = "US States Shaded by Frequency in Dataset",
+    caption = "Data source: ACS"
+  )
+
 ```
 The following statistics provide an overview of the data distribution, highlighting significant variation in rental prices, income levels, and property characteristics. Such variation underscores the need for robust multivariate analysis to disentangle the effects of different predictors. 
 
@@ -303,7 +312,7 @@ fit.lm_acs <- lm(cpi_rent ~ ., data)
 summary(fit.lm_acs)
 ```
 
-To ensure robustness, we applied robust standard errors using the code below:
+To ensure robustness, we applied robust standard errors as displayed below:
 
 ```{r, cache=FALSE}
 coeftest(fit.lm_acs, vcov=vcovHC, type="HC0")
@@ -319,15 +328,17 @@ print(vif)
 Before analyzing the results, we note that all estimates are statistically significant. After applying robust standard errors, each estimated coefficient remains significant. Furthermore, we computed the Variance Inflation Factor (VIF) scores to ensure the validity of the model. All VIF scores are below 5, indicating no strong multicollinearity. This confirms that our model is both reliable and robust.
 
 Model Overview:
-The regression model included a total of 79 predictors and was fitted using a dataset with 13,341,750 observations. The adjusted R-squared of 0.4267 indicates that 42.67% of the variance in CPI Rent is explained by the included predictors. The F-statistic ($ 1.257e^5, p < 2.2e^{-16}$) demonstrates that the overall model is statistically significant.
+The regression model included a total of 79 predictors and was fitted using a dataset with 13,341,750 observations. The R-squared of 0.4267 indicates that 42.67% of the variance in CPI Rent is explained by the included predictors. The F-statistic ($ 1.257e^5, p < 2.2e^{-16}$) demonstrates that the overall model is statistically significant.
 
 Key Results:
 
 Time Trends:
-Yearly dummy variables were included to capture temporal trends. Statistically significant coefficients ($p < 0.001$) indicate clear yearly variation in CPI Rent. For example, CPI Rent increased significantly in 2020 ($\hat{\gamma_{2020}} = 49.41$, $p < 2e^{-16}$) and declined in 2011 ($\hat{\gamma_{2011}} = -6.86$, $p < 2e^{-16}$).
+
+Yearly dummy variables were included to capture temporal trends. Statistically significant coefficients ($p < 0.001$) indicate clear yearly variation in CPI Rent. For example, CPI Rent increased significantly in 2020 compared to the base year($\hat{\gamma_{2020}} = 49.41$, $p < 2e^{-16}$) and declined in 2011 compared to the base year ($\hat{\gamma_{2011}} = -6.86$, $p < 2e^{-16}$).
 
 Population Density:
-The coefficient for density was small but highly significant ($\hat{\beta_{density}} = 0.003$, $p < 2e^{-16}$), suggesting that higher density is associated with marginal increases in CPI Rent.
+
+The coefficient for population density was small but highly significant ($\hat{\beta_{density}} = 0.003$, $p < 2e^{-16}$) indicating that higher population density is associated with marginal increases in the Consumer Price Index (CPI) Rent. However, given that population density values across most regions in the dataset are not significantly high, this suggests that density has a notable impact primarily in areas with exceptionally high population densities. This means the effect of population density on CPI Rent is significant, but only for a select group of regions where density levels are substantially higher than average.
 
 Metro Areas:
 The presence of metro designation (`metro == TRUE`) substantially increased CPI Rent ($\hat{\beta_{metro}} = 166.5$,$p < 2e^{16}$).
