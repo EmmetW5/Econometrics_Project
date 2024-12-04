@@ -232,28 +232,6 @@ ggplot(us_states_data, aes(long, lat, group = group, fill = frequency)) +
   )
 
 ```
-
-The following bar graph illustrates the variability between counties for which we have data and those for which we don't. This incomplete coverage motivated us to complement our analysis with data from RealtorDotCom.
-
-```{r}
-dall %>%
-  mutate(is_present = fips %in% data$fips) %>%
-  group_by(fips, is_present) %>%
-  summarise(
-    count = n(),
-    percentage = (n() / nrow(dall)) * 100
-  ) %>%
-  ggplot(aes(x = is_present, y = count, fill = is_present)) +
-  geom_bar(stat = "identity") +
-  scale_fill_manual(values = c("TRUE" = "steelblue", "FALSE" = "salmon")) +
-  labs(
-    title = "Count and Percentage of Presence and Absence of FIPS",
-    x = "Presence",
-    y = "Count",
-    fill = "Presence"
-  ) +
-  theme_minimal()
-```
 The following statistics provide an overview of the data distribution, highlighting significant variation in rental prices, income levels, and property characteristics. Such variation underscores the need for robust multivariate analysis to disentangle the effects of different predictors. 
 
 ```{r}
@@ -334,7 +312,7 @@ fit.lm_acs <- lm(cpi_rent ~ ., data)
 summary(fit.lm_acs)
 ```
 
-To ensure robustness, we applied robust standard errors using the code below:
+To ensure robustness, we applied robust standard errors as displayed below:
 
 ```{r, cache=FALSE}
 coeftest(fit.lm_acs, vcov=vcovHC, type="HC0")
