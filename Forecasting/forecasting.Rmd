@@ -9,6 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lmtest)
+library(plm)
+
+
 ```
 
 ## Introduction
@@ -23,13 +26,14 @@ In addition to the causal analysis portion of the project, we additionally attem
 ### This is basically the unify.R script that Mohamed wrote. It is currently missing the ACS data as I cant find it...
 
 
-setwd("~/GitHub/Econometrics_Project/CountyData")
+#setwd("~/GitHub/Econometrics_Project/CountyData")
+setwd("C:/Users/narwa/OneDrive/Class Work/Adv Econometrics/Final_Project/Econometrics_Project/CountyData")
 
 table_files = list(
   "fmr" = "FMR/FMR.csv",
   "rdc" = "RealtorDotCom/RDC.csv",
-  "nrc" = "NewResidentialConstruction/NRC.csv",
-  "acs" = "ACS/ACS.csv"
+  "nrc" = "NewResidentialConstruction/NRC.csv"
+  #,"acs" = "ACS/ACS.csv"
 )
 
 counties = table_files %>% 
@@ -48,11 +52,16 @@ Taking a look at the summary of the dataset we see that each observation is by F
 
 ## Forecasting Problem
 
-For this forecasting problem, we will be predicting the average listing price of houses in a given FIPS region. To do so, a train and test split of the data will be created, and prices will be predicted using the other features in the dataset. I will use the years 2016-202 as training data, and reserve the latter two years for testing. Additionally, to correctly forecast the average listing price, we need to remove features that convey the same information (for example, median_listing_price_per_square_foot).
+For this forecasting problem, we will be predicting the average listing price of houses in a given FIPS region. To do so, a train and test split of the data will be created, and prices will be predicted using the other features in the dataset. I will use the years 2016-202 as training data, and reserve the latter two years for testing. Additionally, to correctly forecast the average listing price, we need to remove features that convey the same information (for example, median_listing_price_per_square_foot). Additionally, we scale the data to aid in error metric interpretability. 
 
 ```{r, train_test}
 
 omit_vars = c("median_listing_price_per_square_foot", "median_listing_price", "fips") # removing FIPS for now, need to find a way to deal with this and not get 100s of dummy vars
+
+scaling_vars = c("fmr_0", "fmr_1", "fmr_2", "fmr_3", "fmr_4", "median_listing_price", "average_listing_price")
+counties[scaling_vars] <- scale(counties[scaling_vars])
+
+summary(counties)
 
 train_data = counties %>% 
   filter(year >= 2016 & year <= 2020) %>%
@@ -69,7 +78,19 @@ Lets begin with some basic techniques, the most principal of which is OLS regres
 
 ```{r, OLS, echo=FALSE}
 
-OLS_model = lm(average_listing_price ~ ., data=train_data)
+formula <- as.formula("average_listing_price ~ (poly(active_listing_count, 2, raw = TRUE) + 
+                           poly(median_days_on_market, 2, raw = TRUE) + 
+                           poly(new_listing_count, 2, raw = TRUE) + 
+                           poly(price_increased_count, 2, raw = TRUE) + 
+                           poly(price_reduced_count, 2, raw = TRUE) + 
+                           poly(pending_listing_count, 2, raw = TRUE) + 
+                           poly(median_square_feet, 2, raw = TRUE) + 
+                           poly(total_listing_count, 2, raw = TRUE) + 
+                           poly(pending_ratio, 2, raw = TRUE) + 
+                           poly(total_units, 2, raw = TRUE))^2 + 
+                           year + fmr_0 + fmr_1 + fmr_2 + fmr_3 + fmr_4")
+
+OLS_model = lm(formula, data=train_data)
 
 #coeftest(OLS_model)
 
@@ -79,7 +100,37 @@ summary(OLS_model)
 ```
 
 
+## Predictions 
 
+With our fitted model, we will predict using the testing dataset.
+
+```{r, predict}
+
+predictions = predict(OLS_model, test_data)
+actuals = test_data$average_listing_price
+
+# Due to NAs in the data, we need to drop the NA predictions and their corresponding actuals value
+non_na_indices <- !is.na(predictions)
+predictions <- predictions[non_na_indices]
+actuals <- actuals[non_na_indices]
+
+mse = mean((predictions - actuals)^2)
+mae = mean(abs(predictions - actuals))
+
+# Calculate R-squared on test data
+ss_total <- sum((actuals - mean(actuals))^2)
+ss_residual <- sum((actuals - predictions)^2)
+test_r_squared <- 1 - (ss_residual / ss_total)
+
+# Create a table with the results
+results_table <- data.frame(
+  Metric = c("Mean Squared Error (MSE)", "Mean Absolute Error (MAE)", "Test R-squared"),
+  Value = c(mse, mae, test_r_squared)
+)
+
+print(results_table)
+
+```
 
 
 
