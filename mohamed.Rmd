@@ -1,8 +1,22 @@
-```{r, message=FALSE}
+---
+output:
+  pdf_document: default
+  html_document: default
+  fig_caption: yes
+---
+```{r, message=FALSE, echo=FALSE}
 library(tidyverse)
 library(tidysynth)
 
+knitr::opts_chunk$set(out.width = '75%', out.height = '75%',
+                      echo = FALSE, fig.align = 'center')
+
 constr = read_csv("CausalAnalysis/Final/ConstructionPriceIndex/CONSTR.csv")
+
+ggplot2::theme_set(
+  theme(text = element_text(size = 16),
+        axis.text = element_text(size = 12))
+)
 
 plotConstrVars = function(vars, after = 2012){
   constr2 = constr %>% 
@@ -14,10 +28,17 @@ plotConstrVars = function(vars, after = 2012){
   ggplot(constr2) +
     geom_line(aes(x = date, y = value)) +
     facet_wrap(name ~ ., ncol = 1, scales = "free_y") +
-    scale_x_continuous(breaks = breaks) +
-    theme(axis.text.x = element_text(angle = 90)) 
+    scale_x_continuous(breaks = breaks,
+                       guide = guide_axis(angle = 45))
 }
 ```
+
+## Literature Review
+Kendall and Tulip (2018) quantify the effect of zoning on detached house prices in large cities in Australia. They argue that in the absence of zoning, the market for housing is competitive, as there are low barriers to entry and a large number of firms involved in development and construction. Additionally, they note that in US cities with loose zoning laws, prices are close to costs. Thus, the price of a property can be decomposed into the cost of the structure and land, and zoning representing supply distortions. With this approach, they find large price increases attributable to zoning. For example, in 2016, zoning raised the price of detached houses by 73 percent in Sydney and 69 percent in Melbourne. 
+
+Glaeser, Gyourko, and Saks (2005) argue that while increases in housing prices from 1950 to 1970 are reflective of increased construction cost and higher quality of houses, increases in housing prices from 1970 onward are due to increasing difficulty of obtaining regulatory approval in order to build, largely in the form of zoning laws. They attribute increases in zoning over time to a number of factors, including changing preferences in lawmakers who have become more partial to community and environmental concerns over time, greater organization on the part of homeowners, and rising incomes. 
+
+
 
 ## Data and Description
 For rents, we use the data set of Fair Market Rents provided by the U.S. Department of Housing and Urban Development, which provides annual data on the 40th percentile of rent on a county level from 1995 onwards. Data on sales prices come from the Survey of Construction, administered by the U.S. Census Bureau and U.S. Department of Housing and Urban Development, and come in the form of quarterly median sales price of houses sold in the United States, from the start of 1963 until July 2024. Construction price indices for houses sold and houses under construction are also sourced from the Survey of Construction data. Indices for houses under construction are monthly from 1963, while indices for houses sold are quarterly from 1963. Both are Laspreyes price indices, with the houses sold index being based on the cost of building the house and the value of the land, and the houses under construction index being based on only the cost of building the house. The CPI series used is the index for all urban consumers and all items, and comes from the Bureau of Labor Statistics, and is available on a monthly basis until September 2024.
@@ -29,12 +50,13 @@ For rents, we use the data set of Fair Market Rents provided by the U.S. Departm
 Traditional economic models state that the price of a good is affected by the demand and supply functions. A change in the supply function for housing from, for example, an increase in construction costs or the price of land would increase the price of housing. We can control for these factors with the Survey of Construction's price indices. We divide median price of purchased houses by the houses sold index to yield the variable sold_corrected: the price of houses relative to cost of construction and land, thus controlling for the cost of supply.
 
 House price data shows a significant break around 2011, in the aftermath of the Great Recession. Given the massive effect the Great Recession had on the housing market and the large government response, the sharp increase in housing prices may represent a structural break in the data. For this reason we prefer to limit our data range to 2012 onwards.
-```{r}
-plotConstrVars("sold_corrected", 0)
+```{r, fig.cap = 'Graph of sold corrected 1992-2023'}
+plotConstrVars("sold_corrected", 0) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 0))
 ```
 
 We contrast prices controlled for inflation only with CPI (cpi_mspus) to prices controlled for with the houses sold index. The most striking feature of this figure is that while cpi_mspus sees a sharp increase in prices starting at roughly 2020, sold_corrected remains stable. Additionally, while cpi_mspus increases steadily until roughly 2018 and stabilizes until 2020, sold_corrected starts stable and then decreases.
-```{r, message=FALSE}
+```{r, message=FALSE, fig.cap = 'Comparison between cpi mspus and sold corrected'}
 plotConstrVars(c("sold_corrected", "cpi_mspus"))
 ```
 While the methodology does not imply a causal interpretation, it seems highly likely that trends in the housing price are caused by trends in construction costs. Supply costs are a major factor in the cost of almost all goods, and it is hard to conceive of any confounding variable correlated with price and supply cost that could dwarf the effect of supply. Additionally, we graph inflation-controlled housing prices (cpi_mspus) and the inflation-controlled houses sold index (cpi_sold) to show that trends in both coincide.
@@ -47,9 +69,14 @@ One factor that could affect house sales price on the demand side is the interes
 plotConstrVars("sold_corrected_cash")
 ```
 
-Finally, we control using the houses under construction index instead, which only accounts for construction costs, and contrast with the price controlled by houses sold index. Both variables appear near-identical, indicating construction costs as the main driver of the effect we see.
+Additionally, we can control using the houses under construction index instead, which only accounts for construction costs, and contrast with the price controlled by houses sold index. Both variables appear near-identical, indicating construction costs as the main driver of the effect we see.
 ```{r}
 plotConstrVars(c("constr_corrected", "sold_corrected"))
+```
+
+Finally, we can use the Housing Price Index as an alternative method to control for supply by controlling for all house specific factors at once. Here we see the HPI increase over time similar to cpi_mspus. Combined with our earlier analyses, this could indicate that when construction prices increase, sales prices on already-existing houses increase even though they were already constructed.
+```{r, fig.cap = 'HPI vs cpi mspus over time }
+plotConstrVars(c("hpi", "cpi_mspus"))
 ```
 
 ## Zoning synthetic controls
@@ -91,3 +118,4 @@ TO CITE:
 - https://www2.minneapolismn.gov/business-services/planning-zoning/amendments/adopted-proposed/recently-adopted/residential-buildings-3-units-amendment/
 - https://www2.minneapolismn.gov/government/projects/cped/inclusionary-zoning/
 - https://www.tandfonline.com/doi/full/10.1080/01944363.2019.1651216#d1e183
+- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3149272

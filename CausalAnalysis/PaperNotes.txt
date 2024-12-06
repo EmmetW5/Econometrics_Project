@@ -5,8 +5,10 @@ https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3149272
 
 COMMENTS: We can do something similar on a census division level with the construction price index (measure of land value and construction costs). Need to justify that the market is competitive enough that it would clear without zoning: paper contains some references
 
-The Price of Residential Land in Large U.S. cities
-https://www.federalreserve.gov/pubs/feds/2006/200625/200625pap.pdf
-- Data: Freddie Mac CMHPI
+The analysis of the determinants of housing prices
+http://paulorodrigues.pro.br/ojs/ijmp/index.php/ijmp/article/view/521
+- Suggests some macro factors such as interest rate and inflation are not causally related to housing prices
 
-COMMENTS: Data useful if a different HPI source needed?
+Why have housing prices gone up?
+https://www.aeaweb.org/articles?id=10.1257/000282805774669961
+Blames zoning: Soaring prices and falling development implies restrictions on supply

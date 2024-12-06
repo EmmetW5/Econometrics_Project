@@ -3,16 +3,19 @@ library(tidyverse)
 library(readxl)
 
 rename_lower = function(x) rename_with(x, str_to_lower, everything())
+yq_to_dates = function(x) {
+  x %>% 
+    mutate(date_string = str_c(year, " ", quarter),
+           date = yq(date_string)) %>% 
+    select(-c(date_string, quarter))
+}
 
 sold_ind = read_xlsx("price_sold_cust.xlsx") %>% 
   select(Year, starts_with("Q")) %>% 
   pivot_longer(starts_with("Q"), names_to = "Quarter", 
                values_to = "sold_price_ind") %>% 
-  mutate(Quarter = str_extract(Quarter, "[0-9]$") %>% as.numeric(),
-         date_string = str_c(Year, " ", (Quarter-1)*3 + 1),
-         date = ym(date_string)) %>% 
-  select(-date_string) %>% 
   rename_lower() %>% 
+  yq_to_dates() %>% 
   na.omit()
 
 constr_ind = read_xlsx("price_uc_cust.xlsx") %>% 
@@ -35,12 +38,20 @@ cpi = read_csv("CPIU.csv") %>%
   rename(cpi = cpiaucsl) %>% 
   mutate(date = ymd(date))
 
+hpi = read_csv("hpi_at_state.csv") %>% 
+  rename_lower() %>% 
+  group_by(year, quarter) %>% 
+  summarize(hpi = mean(hpi, na.rm = T)) %>%
+  ungroup() %>% 
+  yq_to_dates()
+  
 constr_data = sold_ind %>% 
   inner_join(mspus) %>%
   inner_join(msptfc) %>%
   inner_join(constr_ind) %>% 
   inner_join(fmr) %>% 
   inner_join(cpi) %>% 
+  inner_join(hpi) %>% 
   mutate(cpi_mspus = (mspus / cpi),
          sold_corrected = (mspus / sold_price_ind),
          cpi_sold = (sold_price_ind / cpi),
