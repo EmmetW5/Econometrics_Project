@@ -1,0 +1,93 @@
+```{r, message=FALSE}
+library(tidyverse)
+library(tidysynth)
+
+constr = read_csv("CausalAnalysis/Final/ConstructionPriceIndex/CONSTR.csv")
+
+plotConstrVars = function(vars, after = 2012){
+  constr2 = constr %>% 
+    filter(year >= after) %>% 
+    pivot_longer(all_of(vars))
+  
+  breaks = (constr2$date %>% unique)[seq(1, length(constr$date), by = 6)]
+  
+  ggplot(constr2) +
+    geom_line(aes(x = date, y = value)) +
+    facet_wrap(name ~ ., ncol = 1, scales = "free_y") +
+    scale_x_continuous(breaks = breaks) +
+    theme(axis.text.x = element_text(angle = 90)) 
+}
+```
+
+## Data and Description
+For rents, we use the data set of Fair Market Rents provided by the U.S. Department of Housing and Urban Development, which provides annual data on the 40th percentile of rent on a county level from 1995 onwards. Data on sales prices come from the Survey of Construction, administered by the U.S. Census Bureau and U.S. Department of Housing and Urban Development, and come in the form of quarterly median sales price of houses sold in the United States, from the start of 1963 until July 2024. Construction price indices for houses sold and houses under construction are also sourced from the Survey of Construction data. Indices for houses under construction are monthly from 1963, while indices for houses sold are quarterly from 1963. Both are Laspreyes price indices, with the houses sold index being based on the cost of building the house and the value of the land, and the houses under construction index being based on only the cost of building the house. The CPI series used is the index for all urban consumers and all items, and comes from the Bureau of Labor Statistics, and is available on a monthly basis until September 2024.
+
+(Realtor.com needs to be described, Max should already be doing this)
+
+## Analyzing Supply Costs
+
+Traditional economic models state that the price of a good is affected by the demand and supply functions. A change in the supply function for housing from, for example, an increase in construction costs or the price of land would increase the price of housing. We can control for these factors with the Survey of Construction's price indices. We divide median price of purchased houses by the houses sold index to yield the variable sold_corrected: the price of houses relative to cost of construction and land, thus controlling for the cost of supply.
+
+House price data shows a significant break around 2011, in the aftermath of the Great Recession. Given the massive effect the Great Recession had on the housing market and the large government response, the sharp increase in housing prices may represent a structural break in the data. For this reason we prefer to limit our data range to 2012 onwards.
+```{r}
+plotConstrVars("sold_corrected", 0)
+```
+
+We contrast prices controlled for inflation only with CPI (cpi_mspus) to prices controlled for with the houses sold index. The most striking feature of this figure is that while cpi_mspus sees a sharp increase in prices starting at roughly 2020, sold_corrected remains stable. Additionally, while cpi_mspus increases steadily until roughly 2018 and stabilizes until 2020, sold_corrected starts stable and then decreases.
+```{r, message=FALSE}
+plotConstrVars(c("sold_corrected", "cpi_mspus"))
+```
+While the methodology does not imply a causal interpretation, it seems highly likely that trends in the housing price are caused by trends in construction costs. Supply costs are a major factor in the cost of almost all goods, and it is hard to conceive of any confounding variable correlated with price and supply cost that could dwarf the effect of supply. Additionally, we graph inflation-controlled housing prices (cpi_mspus) and the inflation-controlled houses sold index (cpi_sold) to show that trends in both coincide.
+```{r}
+plotConstrVars(c("cpi_mspus", "cpi_sold"))
+```
+
+One factor that could affect house sales price on the demand side is the interest rate: a lower interest rate increases the demand for housing due to more favorable terms on mortgages. To eliminate this factor, we also use the price of houses purchased with cash (full price up front with no mortgage or loan) which should be unaffected by the interest rate. After controlling with the houses sold index, we see the same general trend, albeit with much more volatility. The average price is stable until 2018, starts decreasing until 2020, then seems to stabilize again.
+```{r}
+plotConstrVars("sold_corrected_cash")
+```
+
+Finally, we control using the houses under construction index instead, which only accounts for construction costs, and contrast with the price controlled by houses sold index. Both variables appear near-identical, indicating construction costs as the main driver of the effect we see.
+```{r}
+plotConstrVars(c("constr_corrected", "sold_corrected"))
+```
+
+## Zoning synthetic controls
+The practice of zoning, or restricting what types of construction can occur on certain areas, is often blamed for driving up the price of housing by artificially limiting supply. One particular form of zoning that receives significant attention is single-family zoning, only allowing the construction of single-family homes. As part of the comprehensive Minneapolis 2040 plan, taking effect January 1, 2020, Minneapolis passed a law ending single-family zoning, a feat few other cities have matched. Additionally, the city implemented inclusionary zoning, requiring developers to have some of their units to be rented at prices below certain percentages of median income in the area.
+
+To assess the effectiveness of these policies in reducing local rents, we utilize a synthetic control approach, as we have no reason to believe the parallel trends assumption should hold. The control group is comprised of metro areas as designated by the U.S. Department of Housing and Urban Development in the states of Minnesota (which contains Minneapolis) and Wisconsin. One limitation of our data is that the metro area containing Minneapolis also contains the slightly smaller neighboring city of St. Paul, which was not directly affected by the laws passed. This should dilute the overall effect, but so long as there are no simultaneous shocks to housing prices in St. Paul, a causal interpretation is still possible. We could also expect to see spillover effects decreasing rent in St. Paul as landlords compete with lower prices. For predictive variables, we use population in 2010 and market factors from 2016.
+
+Our results indicate a increase in rent in the metro area containing Minneapolis and St. Paul compared to the synthetic control. As outlined in Abadie et al. (2010), we compute Fisher's Exact p-value as 0.5714, indicating no signifiance change in rents.
+```{r}
+fmr_synth = read_csv("CausalAnalysis/Final/Minnesota/FMR_synth.csv")
+
+treat_date = 2020
+treated_unit = "Minneapolis-St. Paul-Bloomington, MN-WI HUD Metro FMR Area"
+
+synth = fmr_synth %>%
+  synthetic_control(outcome = price,
+                    unit = areaname22,
+                    time = year,
+                    i_unit = treated_unit,
+                    i_time = treat_date) %>% 
+  generate_predictor(time_window = 2016,
+                     populat = pop2010,
+                     mdom = median_days_on_market,
+                     nlc = new_listing_count,
+                     plc = pending_listing_count,
+                     pic = price_increased_count,
+                     msf = median_square_feet
+                     ) %>%
+  generate_weights() %>% 
+  generate_control()
+
+plot_trends(synth)
+plot_differences(synth)
+```
+
+
+TO CITE:
+- All data sources
+- https://www2.minneapolismn.gov/business-services/planning-zoning/amendments/adopted-proposed/recently-adopted/residential-buildings-3-units-amendment/
+- https://www2.minneapolismn.gov/government/projects/cped/inclusionary-zoning/
+- https://www.tandfonline.com/doi/full/10.1080/01944363.2019.1651216#d1e183

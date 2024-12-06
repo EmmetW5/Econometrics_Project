@@ -1,0 +1,56 @@
+```{r}
+library(tidyverse)
+library(didimputation)
+
+fmr = read_csv("FMR.csv") %>% 
+  rename(name = areaname22) %>% 
+  filter(str_detect(name, "OR") | str_detect(name, ", WA"),
+         str_detect(name, " MSA"),
+         year < 2025) %>% 
+  mutate(name = str_remove(name, " MSA"),
+         period = year - min(year),
+         state = str_extract(name, "(?<=, )\\w+"),
+         oregon = as.numeric(state == "OR"))
+
+bill_dates = tribble(
+  ~name, ~treat_date,
+  "Albany, OR", "2022-01-01",
+  "Portland-Vancouver-Hillsboro, OR-WA", "2022-07-01",
+  "Medford, OR", "2022-07-01",
+  "Salem, OR", "2022-03-01",
+  "Corvallis, OR", "2022-06-01",
+  "Grants Pass, OR", NA,
+  "Eugene-Springfield, OR", "2022-07-01"
+) %>% 
+  mutate(treat_year = year(ymd(treat_date)))
+```
+
+```{r}
+ggplot(fmr %>% group_by(year, state) %>% summarize(fmr_1 = mean(fmr_1))) + 
+  geom_line(aes(x = year, y = fmr_1, color = state)) +
+  xlim(2018, 2024)
+```
+
+```{r}
+fmr = fmr %>% 
+  left_join(bill_dates) %>% 
+  mutate(treat_period = treat_year - min(year),
+         treated = as.numeric(!is.na(treat_period)),
+         yearFac = as.factor(year),
+         post1 = year >= 2023,
+         post2 = year >= 2024)
+```
+
+```{r}
+lm(fmr_1 ~ treated + yearFac + name + treated*post2, fmr) %>% 
+  summary
+```
+
+
+```{r}
+es = did_imputation(
+  data = fmr , yname = "fmr_1", tname = "period", idname = "name",
+  gname = "treat_period", horizon = TRUE, pretrends = -(1:5),
+  first_stage = ~ 0 | name + period
+)
+```

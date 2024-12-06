@@ -1,7 +1,7 @@
 ```{r}
 library(tidyverse)
 constr = read_csv("CONSTR.csv") %>% 
-  filter(year >= 2000)
+  filter(year >= 2012)
 ```
 ```{r}
 states = read_csv("../../CountyData/RealtorDotCom/RDC.csv") %>% 
@@ -13,7 +13,7 @@ states = read_csv("../../CountyData/RealtorDotCom/RDC.csv") %>%
 
 ```{r}
 constr2 = constr %>% 
-  pivot_longer(c("constr_corrected", "ffr"))
+  pivot_longer(c("fmr_corrected"))
 
 breaks = (constr2$date %>% unique)[seq(1, length(constr$date), by = 6)]
 

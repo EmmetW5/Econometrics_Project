@@ -1,0 +1,364 @@
+---
+title: "Project"
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-10-24"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = T)
+
+# Set the correct default repository
+r = getOption("repos")
+r["CRAN"] = "http://cran.rstudio.com"
+options(repos = r)
+
+
+# These will install required packages if they are not already installed
+if (!require("ggplot2")) {
+   install.packages("ggplot2")
+   library(ggplot2)
+}
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("xtable")) {
+   install.packages("xtable")
+   library(xtable)
+}
+if (!require("pander")) {
+   install.packages("pander")
+   library(pander)
+}
+
+if (!require("devtools")) {
+  install.packages("devtools" ) 
+  library(devtools)
+}
+
+if (!require("usethis")) {
+  install.packages("usethis" ) 
+  library(usethis)
+}
+
+if (!require("e1071")) {
+ install.packages("e1071" ) 
+  library(e1071)
+}
+
+if (!require("pROC")){
+  install.packages("pROC")
+   library(pROC)
+} 
+
+if (!require("dplyr")) {
+   install.packages("dplyr")
+   library(dplyr)
+}
+
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+   library(tidyverse)
+}
+
+if (!require("caret")) {
+   install.packages("caret")
+   library(caret)
+}
+
+if (!require("formattable")) {
+   install.packages("formattable")
+   library(formattable)
+}
+
+if (!require("glmnet")) {
+   install.packages("glmnet")
+   library(glmnet)
+}
+
+if (!require("adabag")) {
+   install.packages("adabag")
+   library(adabag)
+}
+
+if (!require("ada")) {
+   install.packages("ada")
+   library(ada)
+}
+
+
+if (!require("corrplot")) {
+   install.packages("corrplot")
+   library(corrplot)
+}
+if (!require("xgboost")) {
+   install.packages("xgboost")
+   library(xgboost)
+}
+if (!require("car")) {
+   install.packages("car")
+   library(car)
+}
+if (!require("maps")) {
+   install.packages("maps")
+   library(maps)
+}
+if (!require("mapproj")) {
+   install.packages("mapproj")
+   library(mapproj)
+}
+if (!require("stargazer")) {
+   install.packages("stargazer")
+   library(stargazer)
+}
+if (!require("sandwich")) {
+   install.packages("sandwich")
+   library(sandwich)
+}
+if (!require("lmtest")) {
+   install.packages("lmtest")
+   library(lmtest)
+}
+
+
+knitr::opts_chunk$set(echo = TRUE)
+some_na <- function(x) any(is.na(x))
+```
+
+```{r,include=FALSE, cache=FALSE}
+acs <- readRDS("acs.rds")
+```
+
+```{r, include=FALSE}
+# Set to TRUE to expand R code blocks; set to FALSE to collapse R code blocks 
+show <- FALSE
+```
+
+
+## ACS Analysis
+
+This section used the detailed data from the American Community Survey (ACS), an annual survey conducted by the U.S. Census Bureau that captures key social, economic, housing, and demographic information across the United States (https://www.census.gov/programs-surveys/acs/). The ACS dataset is a comprehensive resource for understanding the factors influencing rental housing prices. Specifically, the data includes demographic, geographic, and housing information as well as the locations from which the data was collected. 
+
+Our analysis seeks to identify the variables that significantly impact rental housing prices and quantify their effect. We focus on demographic factors such as household income, geographic indicators like metropolitan status, and structural features of houses to examine their contributions to rental price variations.
+
+Given the self-reporting status of housing value in the dataset, we concluded that rental prices were a more accurate measure of house value. For this reason, we decided to conduct our analysis using this as our dependent variable. By applying robust statistical methods we provide a deep exploration of the determinants of housing rental prices.
+
+### Data Description
+
+The dataset used in this study includes observations on rental housing units from the most recent ACS. Key variables of interest include:
+
+* Monthly Rental Price: The dependent variable, representing the self-reported cost of renting a housing unit.
+
+* Demographic Variables: These include household income, age of the householder, population density.
+
+* Housing Characteristics: Information about the number of bedrooms, age of the property, kitchen and plumbing inclusion, and room number.
+
+* Geographic Variables: Metropolitan versus rural location, and proximity to major urban centers.
+
+The data was cleaned to ensure accuracy and consistency. The total number of observations was 56,835,321 with 29 features but after removing rows with missing or NA values for rental price or explanatory variables (76.5%) and selecting important features, we were left with 13,341,750 observations with 15 features. 
+
+We are not including taxincl and insincl because those columns only have zeros. Likewise, we are excluding debt_incurred since it only has FALSE. Finally, year_from_start was removed given it was perfectly correlated with year.
+
+```{r}
+# Not including taxincl, insincl and debt_incurred because first two only have zero
+# and last one only has false
+
+#year_from_start is perfectly correlated with year so we removed it.
+
+data <- acs %>% select(year, density, metro, fips,
+                        hhincome,
+                        rooms, builtyr2, unitsstr, bedrooms,
+                        age, married, male,
+                        complete_plumbing, has_kitchen, statefip,
+                       cpi_rent) %>%
+  na.omit() %>%
+  mutate(year = as.factor(year))
+  
+```
+
+The dataset contains observations from counties across the United States. However, due to challenges in obtaining complete information and the presence of missing values in the FIPS column, it does not provide a clear representation of individual counties. Instead, we aggregated the data at the state level. The map below highlights the states, with darker shades indicating a higher number of observations in the dataset.
+
+
+```{r}
+# Load the US states map data
+us_states <- map_data("state")
+
+# FIPS to state name mapping
+fips_to_state <- data.frame(
+  statefip = c(01, 02, 04, 05, 06, 08, 09, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+           24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+           42, 44, 45, 46, 47, 48, 49, 50, 51, 53, 54, 55, 56),
+  state = c("alabama", "alaska", "arizona", "arkansas", "california", "colorado",
+            "connecticut", "delaware", "district of columbia", "florida", "georgia",
+            "hawaii", "idaho", "illinois", "indiana", "iowa", "kansas", "kentucky",
+            "louisiana", "maine", "maryland", "massachusetts", "michigan",
+            "minnesota", "mississippi", "missouri", "montana", "nebraska", "nevada",
+            "new hampshire", "new jersey", "new mexico", "new york", "north carolina",
+            "north dakota", "ohio", "oklahoma", "oregon", "pennsylvania", "rhode island",
+            "south carolina", "south dakota", "tennessee", "texas", "utah", "vermont",
+            "virginia", "washington", "west virginia", "wisconsin", "wyoming")
+)
+
+# Join the datasets to convert FIPS to state names
+data <- data %>%
+  left_join(fips_to_state, by = "statefip")
+
+
+# Count the number of times each state appears in the dataset
+state_counts <- data %>%
+  count(state, name = "frequency")
+
+# Join the state counts with the map data
+us_states_data <- us_states %>%
+  mutate(region = as.character(region)) %>%
+  left_join(state_counts, by = c("region" = "state"))
+
+# Create the map
+ggplot(us_states_data, aes(long, lat, group = group, fill = frequency)) +
+  geom_polygon(color = "white", size = 0.2) +
+  scale_fill_gradient(
+    low = "lightblue", 
+    high = "darkblue", 
+    na.value = "lightgray", 
+    name = "Frequency"
+  ) +
+  theme_void() +
+  labs(
+    title = "US States Shaded by Frequency in Dataset",
+    caption = "Data source: ACS"
+  )
+
+```
+The following statistics provide an overview of the data distribution, highlighting significant variation in rental prices, income levels, and property characteristics. Such variation underscores the need for robust multivariate analysis to disentangle the effects of different predictors. 
+
+```{r}
+# Select only numeric variables
+numeric_data <- data %>% select_if(is.numeric)
+
+# Summarize the statistics for numeric columns
+summary_table <- data.frame(
+  Variable = colnames(numeric_data),
+  Mean = round(sapply(numeric_data, mean, na.rm = TRUE), 2),
+  Variance = round(sapply(numeric_data, var, na.rm = TRUE), 2),
+  Min = round(sapply(numeric_data, min, na.rm = TRUE), 2),
+  Max = round(sapply(numeric_data, max, na.rm = TRUE), 2)
+)
+
+rownames(summary_table) <- 1:nrow(summary_table)
+
+# Print the table nicely
+kable(summary_table, format = "markdown", caption = "Summary Statistics for Numeric Variables")
+```
+
+One variable that caught our attention was age. At first, we were surprised and confused by the presence of ages such as 0 years old or very young ages. However, after further investigation, we discovered that the ACS collects data on every person living in each household to ensure a more comprehensive and accurate measure. As a result, the age variable includes values ranging from 0 to 97.
+
+The following summary of the factor features provides further insight into our dataset. As indicated by the FIPS feature, we have data from every state in the country, as shown by the 51 unique values in this feature. California (represented by FIPS code 06) is the most common state in the sample dataset. Additionally, the "year" feature contains 18 levels, corresponding to 18 years of data in the sample, with 2014 being the most commonly represented year.
+
+```{r}
+# Select only factor (categorical) variables
+factor_data <- data %>% select(-fips) %>%
+  select_if(is.factor)
+
+# Summarize the statistics for factor columns
+summary_table2 <- data.frame(
+  Variable = colnames(factor_data),
+  `Number of Levels` = sapply(factor_data, function(col) length(unique(col))),
+  `Most Frequent Level` = sapply(factor_data, function(col) names(sort(table(col), decreasing = TRUE)[1])),
+  `Frequency of Most Frequent Level` = sapply(factor_data, function(col) max(table(col)))
+)
+
+# Print the table nicely
+kable(summary_table2, format = "markdown", caption = "Summary Statistics for Factor Variables")
+```
+
+
+### Methodology
+
+To analyze the determinants of rental prices, we adopted a multivariate linear regression model. This method allows us to evaluate the individual contribution of each explanatory variable while controlling for the effects of others. The steps taken in the analysis are as follows:
+
+Variable Selection: Using domain knowledge and exploratory data analysis, we identified variables with potential relevance to rental price determination.
+
+Model Specification:
+
+The primary model is specified as:
+
+$$
+Y = \beta_0 + \gamma_i * year_i + \theta_j * state_j + \beta_k * X_k + \epsilon
+$$
+
+Where:
+
+* $Y$ represents the dependent variable (Rent price).
+* $X_1, X_2, X_3,\dots, X_n$ are the independent variables (e.g., [density, metro, hhincome, rooms, builtyr2, unitsstr, bedrooms, age, married, male, complete_plumbing, has_kitchen]).
+* $year_i$ is the dummy variable for the year with $i \in \{1,\dots, 18\}$ as we're controlling for 18 years of data.
+* $state_j$ is the dummy variable for the state with $j \in \{1,\dots, 51\}$ as we're controlling for all 50 states and the District of Columbia.
+* $\beta_0$ is the intercept of the regression model.
+* $\beta_1, \beta_2, \beta_3,\dots, \beta_n$ are the coefficients that represent the relationship between each independent variable and the dependent variable.
+* $\gamma_i$ are the coefficients that represent the relationship between each year and the dependent variable.
+* $\theta_j$ are the coefficients that represent the relationship between each state and the dependent variable.
+* $\epsilon$ is the error term, capturing unobserved factors.
+
+Model Estimation: To estimate the coefficients, we employed Ordinary Least Squares (OLS) regression. Diagnostic tests were conducted to validate the model assumptions:
+
+Multicollinearity: Variance Inflation Factors (VIF) were calculated to ensure no strong multicollinearity among the predictors.
+The model was implemented using the following code, which provided the estimated coefficients:
+
+```{r, cache=FALSE}
+data <- data %>% select(-fips)
+fit.lm_acs <- lm(cpi_rent ~ ., data)
+summary(fit.lm_acs)
+```
+
+To ensure robustness, we applied robust standard errors as displayed below:
+
+```{r, cache=FALSE}
+coeftest(fit.lm_acs, vcov=vcovHC, type="HC0")
+```
+
+The VIF scores were computed to further validate the model:
+
+```{r, cache=FALSE}
+vif <- vif(fit.lm_acs)
+print(vif)
+```
+
+Before analyzing the results, we note that all estimates are statistically significant. After applying robust standard errors, each estimated coefficient remains significant. Furthermore, we computed the Variance Inflation Factor (VIF) scores to ensure the validity of the model. All VIF scores are below 5, indicating no strong multicollinearity. This confirms that our model is both reliable and robust.
+
+Model Overview:
+The regression model included a total of 79 predictors and was fitted using a dataset with 13,341,750 observations. The R-squared of 0.4267 indicates that 42.67% of the variance in CPI Rent is explained by the included predictors. The F-statistic ($ 1.257e^5, p < 2.2e^{-16}$) demonstrates that the overall model is statistically significant.
+
+Key Results:
+
+Time Trends:
+
+Yearly dummy variables were included to capture temporal trends. Statistically significant coefficients ($p < 0.001$) indicate clear yearly variation in CPI Rent. For example, CPI Rent increased significantly in 2020 compared to the base year($\hat{\gamma_{2020}} = 49.41$, $p < 2e^{-16}$) and declined in 2011 compared to the base year ($\hat{\gamma_{2011}} = -6.86$, $p < 2e^{-16}$).
+
+Population Density:
+
+The coefficient for population density was small but highly significant ($\hat{\beta_{density}} = 0.003$, $p < 2e^{-16}$) indicating that higher population density is associated with marginal increases in the Consumer Price Index (CPI) Rent. However, given that population density values across most regions in the dataset are not significantly high, this suggests that density has a notable impact primarily in areas with exceptionally high population densities. This means the effect of population density on CPI Rent is significant, but only for a select group of regions where density levels are substantially higher than average.
+
+Metro Areas:
+The presence of metro designation (`metro == TRUE`) substantially increased CPI Rent ($\hat{\beta_{metro}} = 166.5$,$p < 2e^{16}$).
+
+State Effects:
+State fixed effects (`fips_state`) showed considerable variation. For example, being in state 15 (Hawaii) significantly increased CPI Rent ($\hat{\theta_{15}} = 527.3$, $p < 2e^{-16}$) relative to the baseline.
+
+Housing Characteristics:
+Variables like the number of rooms ($\hat{\beta_{rooms}} = 22.44$, $p < 2e^{-16}$) and the presence of complete plumbing ($\hat{\beta_{plumbing}} = 125.0$, $p < 2e^{-16}$) were positively associated with CPI Rent. Conversely, older buildings (`builtyr2`) and lack of a kitchen had significant negative effects.
+
+3. Variance Inflation Factor (VIF) Analysis:
+The VIF values for all predictors were below 3, except for rooms (GVIF =  $3.039$), indicating no severe multicollinearity. This strengthens the robustness of the model's coefficient estimates.
+
+4. Residual Analysis:
+The residual standard error was $340.4$, indicating the average deviation between observed and predicted values. Residuals ranged from $-6,398.4$ to $4,859.9$, with a median near zero, suggesting an overall balanced fit.
+
+5. Limitations and Future Research:
+Although the model captures significant variance, $57.33%$ of CPI Rent variability remains unexplained. Including additional predictors like economic trends, housing policies, and neighborhood amenities could enhance model performance.
+
+
+
+
+

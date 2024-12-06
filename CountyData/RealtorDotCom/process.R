@@ -1,14 +1,20 @@
-setwd("~/Coursework/DatEcon/Project/Data/CountyData/RealtorDotCom")
+setwd("~/Coursework/DatEcon/Project/Econometrics_Project/CausalAnalysis/DID")
 library(tidyverse)
 
-rdc = read_csv("RDC_Inventory_Core_Metrics_County_History.csv") %>% 
-  rename(fips = county_fips) %>% 
+cross = read_csv("crosswalk.csv") %>% 
+  rename(cbsa_code = cbsacode, state_fips = fipsstatecode) %>% 
+  mutate(metro = str_starts(metropolitanmicropolitanstatis, "Metro")) %>% 
+  select(cbsa_code, state_fips, metro)
+
+rdc = read_csv("RDC_Inventory_Core_Metrics_Metro_History.csv") %>% 
   mutate(date = ym(month_date_yyyymm),
          year = year(date),
          month = month(date)) %>% 
-  select(-c(date, month_date_yyyymm, month, county_name,
+  select(-c(month_date_yyyymm, month,
             ends_with("yy"), ends_with("mm"), quality_flag)) %>% 
-  group_by(fips, year) %>% 
-  summarize(across(everything(), mean))
+  inner_join(cross) %>% 
+  filter(metro) %>% 
+  mutate(state = covidcast::fips_to_abbr(state_fips)) %>% 
+  select(-metro, state_fips)
 
 write_csv(rdc, "RDC.csv")

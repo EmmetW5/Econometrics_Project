@@ -1,0 +1,63 @@
+```{r}
+library(tidyverse)
+library(tidysynth)
+```
+
+
+```{r}
+states = c()
+treat_date = ymd("2022-07-01")
+unit_type = "state"
+treated_unit = "MI"
+
+rdc = read_csv("RDC.csv") %>% 
+  distinct(date, cbsa_code, .keep_all = T) %>% 
+  rename(price = median_listing_price_per_square_foot) %>% 
+  mutate(treated = (get(unit_type) == treated_unit))
+
+if(length(states) > 0) rdc = filter(rdc, state %in% states)
+
+if(unit_type == "state"){
+  rdc = rdc %>% 
+    group_by(state, date) %>% 
+    summarize(across(where(\(x) is.numeric(x) | is.logical(x)), \(x) mean(x, na.rm = T))) %>% 
+    mutate(treated = as.logical(treated))
+}
+```
+
+```{r}
+base_prices = rdc %>% 
+  filter(date == min(date)) %>% 
+  rename(base_price = price) %>% 
+  select({{unit_type}}, base_price) %>% 
+  distinct()
+  
+rdc = rdc %>%
+  inner_join(base_prices) %>%
+  group_by(get(unit_type), date) %>%
+  mutate(price_demean = price - base_price) %>%
+  ungroup()
+
+rdcsum = rdc %>% 
+  group_by(treated, date) %>% 
+  summarize(price_demean = mean(price_demean))
+
+ggplot(rdcsum) +
+  geom_line(aes(x = date, y = price_demean, color = treated)) +
+  geom_segment(aes(x = treat_date, xend = treat_date, y = -Inf, yend = Inf),
+               linetype = "dashed")
+
+synth = rdc %>%
+  synthetic_control(outcome = price,
+                    unit = !!rlang::parse_expr(unit_type),
+                    time = date,
+                    i_unit = treated_unit,
+                    i_time = treat_date) %>%
+  generate_predictor() %>% 
+  generate_weights() %>%
+  generate_control()
+
+synth %>% 
+  grab_significance()
+```
+

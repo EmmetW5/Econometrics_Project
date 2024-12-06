@@ -1,0 +1,3 @@
+Housing market is competitive?
+- Clear supply/demand distortion. Price changes unexplained by construction price
+- Robust to specifications: cash only, exclude land, 
