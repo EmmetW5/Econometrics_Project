@@ -269,7 +269,7 @@ fit4 = coeftest(fit.lm_acs_nostatenoyear, vcov=vcovHC, type = "HC0")
 
 stargazer(fit1, fit2, fit3, fit4, omit = c("year", "state"), dep.var.labels.include = F,
           column.labels = c("Main specification", "Time FEs only", "State FEs only", "No FEs"),
-          dep.var.caption = "", label = "acsresults", header = FALSE, title = "Results of regressions")
+          dep.var.caption = "", label = "tab:acsresults", header = FALSE, title = "Results of regressions")
 ```
 
 
