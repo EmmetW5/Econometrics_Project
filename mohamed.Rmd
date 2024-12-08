@@ -9,7 +9,7 @@ library(tidyverse)
 library(tidysynth)
 
 knitr::opts_chunk$set(out.width = '75%', out.height = '75%',
-                      echo = FALSE, fig.align = 'center')
+                      echo = FALSE, fig.align = 'center', message = FALSE)
 
 constr = read_csv("CausalAnalysis/Final/ConstructionPriceIndex/CONSTR.csv")
 
@@ -72,11 +72,6 @@ plotConstrVars("sold_corrected_cash")
 Additionally, we can control using the houses under construction index instead, which only accounts for construction costs, and contrast with the price controlled by houses sold index. Both variables appear near-identical, indicating construction costs as the main driver of the effect we see.
 ```{r}
 plotConstrVars(c("constr_corrected", "sold_corrected"))
-```
-
-Finally, we can use the Housing Price Index as an alternative method to control for supply by controlling for all house specific factors at once. Here we see the HPI increase over time similar to cpi_mspus. Combined with our earlier analyses, this could indicate that when construction prices increase, sales prices on already-existing houses increase even though they were already constructed.
-```{r, fig.cap = 'HPI vs cpi mspus over time }
-plotConstrVars(c("hpi", "cpi_mspus"))
 ```
 
 ## Zoning synthetic controls
