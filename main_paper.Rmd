@@ -1,152 +1,90 @@
 ---
-title: "Project"
+title: "Market Factors Affecting Housing Prices"
+author: "A. Laphond, M. Troeger, Mohamed Lashuel, E. Whitehead"
+date: "`r Sys.Date()`"
 output:
-  pdf_document: default
+  bookdown::pdf_document2:
+    toc: yes
   html_document: default
-date: "2024-10-24"
+fig_caption: yes
+bibliography: refs.bib
+nocite: '@*'
 ---
 
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(cache = T)
-
-# Set the correct default repository
-r = getOption("repos")
-r["CRAN"] = "http://cran.rstudio.com"
-options(repos = r)
-
-
-# These will install required packages if they are not already installed
-if (!require("ggplot2")) {
-   install.packages("ggplot2")
-   library(ggplot2)
-}
-if (!require("knitr")) {
-   install.packages("knitr")
-   library(knitr)
-}
-if (!require("xtable")) {
-   install.packages("xtable")
-   library(xtable)
-}
-if (!require("pander")) {
-   install.packages("pander")
-   library(pander)
-}
-
-if (!require("devtools")) {
-  install.packages("devtools" ) 
-  library(devtools)
-}
-
-if (!require("usethis")) {
-  install.packages("usethis" ) 
-  library(usethis)
-}
-
-if (!require("e1071")) {
- install.packages("e1071" ) 
-  library(e1071)
-}
-
-if (!require("pROC")){
-  install.packages("pROC")
-   library(pROC)
-} 
-
-if (!require("dplyr")) {
-   install.packages("dplyr")
-   library(dplyr)
-}
-
-if (!require("tidyverse")) {
-   install.packages("tidyverse")
-   library(tidyverse)
-}
-
-if (!require("caret")) {
-   install.packages("caret")
-   library(caret)
-}
-
-if (!require("formattable")) {
-   install.packages("formattable")
-   library(formattable)
-}
-
-if (!require("glmnet")) {
-   install.packages("glmnet")
-   library(glmnet)
-}
-
-if (!require("adabag")) {
-   install.packages("adabag")
-   library(adabag)
-}
-
-if (!require("ada")) {
-   install.packages("ada")
-   library(ada)
-}
-
-
-if (!require("corrplot")) {
-   install.packages("corrplot")
-   library(corrplot)
-}
-if (!require("xgboost")) {
-   install.packages("xgboost")
-   library(xgboost)
-}
-if (!require("car")) {
-   install.packages("car")
-   library(car)
-}
-if (!require("maps")) {
-   install.packages("maps")
-   library(maps)
-}
-if (!require("mapproj")) {
-   install.packages("mapproj")
-   library(mapproj)
-}
-if (!require("stargazer")) {
-   install.packages("stargazer")
-   library(stargazer)
-}
-if (!require("sandwich")) {
-   install.packages("sandwich")
-   library(sandwich)
-}
-if (!require("lmtest")) {
-   install.packages("lmtest")
-   library(lmtest)
-}
-
-
-knitr::opts_chunk$set(echo = TRUE)
-some_na <- function(x) any(is.na(x))
+```{r, include = FALSE}
+# 2col format
+# ---
+# title: "Market Factors Affecting Housing Prices"
+# author: "A. Laphond, M. Troeger, Mohamed XX, E. Whitehead"
+# date: "`r Sys.Date()`"
+# output:
+#   bookdown::pdf_document2:
+#     includes:
+#       in_header: "longtable.tex"
+#   html_document: default
+#   toc: yes
+# fig_caption: yes
+# bibliography: refs.bib
+# nocite: '@*'
+# classoption:
+#   - twocolumn
+# header-includes:
+#   - \setlength{\columnsep}{32pt}
+# ---
+# knitr::opts_knit$set(kable.force.latex = TRUE)
 ```
 
-```{r,include=FALSE, cache=FALSE}
-acs <- readRDS("acs.rds")
-```
 
 ```{r, include=FALSE}
-# Set to TRUE to expand R code blocks; set to FALSE to collapse R code blocks 
-show <- FALSE
+library(tidyverse)
+library(knitr)
+
+# Mohamed
+library(tidysynth)
+
+# Alejandro
+library(maps)
+library(mapproj)
+library(stargazer)
+library(sandwich)
+library(lmtest)
+library(car)
+library(tigris)
+library(sf)
+
+knitr::opts_chunk$set(out.width = '75%', out.height = '75%',
+                      echo = FALSE, fig.align = 'center', 
+                      message = FALSE)
+
+plot_theme = theme(
+  text = element_text(size = 16),
+  axis.text = element_text(size = 12)
+)
+ggplot2::theme_set(plot_theme)
+
+doacs = TRUE
 ```
 
+\begin{center}
+```{r echo=FALSE, out.width="50%"}
+knitr::include_graphics("uni.jpg")
+```
+\end{center}
 
-## ACS Analysis
+\newpage
 
-This section used the detailed data from the American Community Survey (ACS), an annual survey conducted by the U.S. Census Bureau that captures key social, economic, housing, and demographic information across the United States (https://www.census.gov/programs-surveys/acs/). The ACS dataset is a comprehensive resource for understanding the factors influencing rental housing prices. Specifically, the data includes demographic, geographic, and housing information as well as the locations from which the data was collected. 
+# Literature Review
+Kendall and Tulip (2018) quantify the effect of zoning on detached house prices in large cities in Australia. They argue that in the absence of zoning, the market for housing is competitive, as there are low barriers to entry and a large number of firms involved in development and construction. Additionally, they note that in US cities with loose zoning laws, prices are close to costs. Thus, the price of a property can be decomposed into the cost of the structure and land, and zoning representing supply distortions. With this approach, they find large price increases attributable to zoning. For example, in 2016, zoning raised the price of detached houses by 73 percent in Sydney and 69 percent in Melbourne. 
+
+# ACS Analysis
+
+This section used the detailed data from the American Community Survey (ACS), an annual survey conducted by the U.S. Census Bureau that captures key social, economic, housing, and demographic information across the United States^[https://www.census.gov/programs-surveys/acs/]. The ACS dataset is a comprehensive resource for understanding the factors influencing rental housing prices. Specifically, the data includes demographic, geographic, and housing information as well as the locations from which the data was collected. 
 
 Our analysis seeks to identify the variables that significantly impact rental housing prices and quantify their effect. We focus on demographic factors such as household income, geographic indicators like metropolitan status, and structural features of houses to examine their contributions to rental price variations.
 
 Given the self-reporting status of housing value in the dataset, we concluded that rental prices were a more accurate measure of house value. For this reason, we decided to conduct our analysis using this as our dependent variable. By applying robust statistical methods we provide a deep exploration of the determinants of housing rental prices.
 
-### Data Description
+## Data Description
 
 The dataset used in this study includes observations on rental housing units from the most recent ACS. Key variables of interest include:
 
@@ -162,101 +100,69 @@ The data was cleaned to ensure accuracy and consistency. The total number of obs
 
 We are not including taxincl and insincl because those columns only have zeros. Likewise, we are excluding debt_incurred since it only has FALSE. Finally, year_from_start was removed given it was perfectly correlated with year.
 
-```{r}
+```{r, eval=doacs}
+acs = readRDS("acs_sample.rds")
 # Not including taxincl, insincl and debt_incurred because first two only have zero
 # and last one only has false
 
 #year_from_start is perfectly correlated with year so we removed it.
 
-data <- acs %>% select(year, density, metro, fips,
+data <- acs %>% select(year, density, metro, puma,
                         hhincome,
                         rooms, builtyr2, unitsstr, bedrooms,
                         age, married, male,
                         complete_plumbing, has_kitchen, statefip,
-                       cpi_rent) %>%
+                       cpi_rent
+                       ) %>%
   na.omit() %>%
+  filter(year >= 2012) %>%
   mutate(year = as.factor(year))
   
 ```
 
-The dataset contains observations from counties across the United States. However, due to challenges in obtaining complete information and the presence of missing values in the FIPS column, it does not provide a clear representation of individual counties. Instead, we aggregated the data at the state level. The map below highlights the states, with darker shades indicating a higher number of observations in the dataset.
+The dataset contains observations from counties across the United States. However, due to challenges in obtaining complete information and the presence of missing values in the FIPS column, it does not provide a clear representation of individual counties. Instead, we looked at PUMAs (Public Use Microdata Samples), which "are non-overlapping, statistical geographic areas that partition each state or equivalent entity into geographic areas containing no fewer than 100,000 people each."^[https://www.census.gov/programs-surveys/geography/guidance/geo-areas/pumas.html]. Figure \@ref(fig:acsmap) highlights the regions from which we have data for the year 2019 (data is available for 2012-2022, this is only for visual aid).
 
 
-```{r}
-# Load the US states map data
-us_states <- map_data("state")
+```{r acsmap, eval=doacs, fig.cap = 'Regions with data present'}
+# Set tigris options for retrieving data
+options(tigris_use_cache = TRUE)
 
-# FIPS to state name mapping
-fips_to_state <- data.frame(
-  statefip = c(01, 02, 04, 05, 06, 08, 09, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-           24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-           42, 44, 45, 46, 47, 48, 49, 50, 51, 53, 54, 55, 56),
-  state = c("alabama", "alaska", "arizona", "arkansas", "california", "colorado",
-            "connecticut", "delaware", "district of columbia", "florida", "georgia",
-            "hawaii", "idaho", "illinois", "indiana", "iowa", "kansas", "kentucky",
-            "louisiana", "maine", "maryland", "massachusetts", "michigan",
-            "minnesota", "mississippi", "missouri", "montana", "nebraska", "nevada",
-            "new hampshire", "new jersey", "new mexico", "new york", "north carolina",
-            "north dakota", "ohio", "oklahoma", "oregon", "pennsylvania", "rhode island",
-            "south carolina", "south dakota", "tennessee", "texas", "utah", "vermont",
-            "virginia", "washington", "west virginia", "wisconsin", "wyoming")
-)
+# Fetch PUMA shapefiles for the required states
+# Use a loop or lapply to fetch PUMAs for all statefips in your dataset
+puma_shapefiles <- lapply(unique(data$statefip), function(state) {
+  pumas(state = state, cb = TRUE, year = 2020) # Download PUMAs for the given state
+})
 
-# Join the datasets to convert FIPS to state names
-data <- data %>%
-  left_join(fips_to_state, by = "statefip")
+# Combine all state shapefiles into a single sf object
+puma_combined <- do.call(rbind, puma_shapefiles)
 
+# Filter PUMAs based on the dataset
+highlighted_pumas <- puma_combined %>%
+  filter(as.integer(STATEFP20) %in% data$statefip & as.integer(PUMACE20) %in% data$puma)
 
-# Count the number of times each state appears in the dataset
-state_counts <- data %>%
-  count(state, name = "frequency")
-
-# Join the state counts with the map data
-us_states_data <- us_states %>%
-  mutate(region = as.character(region)) %>%
-  left_join(state_counts, by = c("region" = "state"))
-
-# Create the map
-ggplot(us_states_data, aes(long, lat, group = group, fill = frequency)) +
-  geom_polygon(color = "white", size = 0.2) +
-  scale_fill_gradient(
-    low = "lightblue", 
-    high = "darkblue", 
-    na.value = "lightgray", 
-    name = "Frequency"
+map_plot <- ggplot() +
+  geom_sf(data = puma_combined, fill = "lightgray", color = "white", size = 0.2) + # Background PUMAs
+  geom_sf(data = highlighted_pumas, fill = "red", color = "black", size = 0.4) +  # Highlighted PUMAs
+  coord_sf(
+    xlim = c(-130, -60), # Longitude limits for continental U.S.
+    ylim = c(20, 55)     # Latitude limits for continental U.S.
   ) +
-  theme_void() +
-  labs(
-    title = "US States Shaded by Frequency in Dataset",
-    caption = "Data source: ACS"
+  theme_minimal() +
+  labs(title = "Highlighted PUMAs",
+       caption = "Source: U.S. Census Bureau") +
+  theme(
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+    plot.caption = element_text(size = 12),
+    axis.text = element_blank(),  # Remove axis labels for clarity
+    axis.ticks = element_blank()
   )
 
+map_plot
 ```
+Table \@ref(tab:acssum) provides an overview of the data distribution, highlighting significant variation in rental prices, income levels, and property characteristics. Such variation underscores the need for robust multivariate analysis to disentangle the effects of different predictors. 
 
-The following bar graph illustrates the variability between counties for which we have data and those for which we don't. This incomplete coverage motivated us to complement our analysis with data from RealtorDotCom.
-
-```{r}
-dall %>%
-  mutate(is_present = fips %in% data$fips) %>%
-  group_by(fips, is_present) %>%
-  summarise(
-    count = n(),
-    percentage = (n() / nrow(dall)) * 100
-  ) %>%
-  ggplot(aes(x = is_present, y = count, fill = is_present)) +
-  geom_bar(stat = "identity") +
-  scale_fill_manual(values = c("TRUE" = "steelblue", "FALSE" = "salmon")) +
-  labs(
-    title = "Count and Percentage of Presence and Absence of FIPS",
-    x = "Presence",
-    y = "Count",
-    fill = "Presence"
-  ) +
-  theme_minimal()
-```
-The following statistics provide an overview of the data distribution, highlighting significant variation in rental prices, income levels, and property characteristics. Such variation underscores the need for robust multivariate analysis to disentangle the effects of different predictors. 
-
-```{r}
+```{r acssum, eval=doacs}
+data <- data %>% mutate(statefip = as.factor(statefip)) %>% mutate(puma = as.factor(puma))
 # Select only numeric variables
 numeric_data <- data %>% select_if(is.numeric)
 
@@ -277,11 +183,11 @@ kable(summary_table, format = "markdown", caption = "Summary Statistics for Nume
 
 One variable that caught our attention was age. At first, we were surprised and confused by the presence of ages such as 0 years old or very young ages. However, after further investigation, we discovered that the ACS collects data on every person living in each household to ensure a more comprehensive and accurate measure. As a result, the age variable includes values ranging from 0 to 97.
 
-The following summary of the factor features provides further insight into our dataset. As indicated by the FIPS feature, we have data from every state in the country, as shown by the 51 unique values in this feature. California (represented by FIPS code 06) is the most common state in the sample dataset. Additionally, the "year" feature contains 18 levels, corresponding to 18 years of data in the sample, with 2014 being the most commonly represented year.
+Table \@ref(tab:acsfactors) summarizes the factor features and provides further insight into our dataset. As indicated by the FIPS feature, we have data from every state in the country, as shown by the 51 unique values in this feature. California (represented by FIPS code 06) is the most common state in the sample dataset. Additionally, the "year" feature contains 11 levels, corresponding to 11 years of data in the sample (2012-2022), with 2014 being the most commonly represented year.
 
-```{r}
+```{r acsfactors, eval=doacs}
 # Select only factor (categorical) variables
-factor_data <- data %>% select(-fips) %>%
+factor_data <- data %>%
   select_if(is.factor)
 
 # Summarize the statistics for factor columns
@@ -297,9 +203,9 @@ kable(summary_table2, format = "markdown", caption = "Summary Statistics for Fac
 ```
 
 
-### Methodology
+## Methodology
 
-To analyze the determinants of rental prices, we adopted a multivariate linear regression model. This method allows us to evaluate the individual contribution of each explanatory variable while controlling for the effects of others. The steps taken in the analysis are as follows:
+To analyze the determinants of rental prices, we adopted a multivariate linear regression model. This method allows us to evaluate the individual contribution of each explanatory variable while controlling for the effects of others. it is important to note that our dependent variable (rent) is the gross rent adjusted by inflation. The steps taken in the analysis are as follows:
 
 Variable Selection: Using domain knowledge and exploratory data analysis, we identified variables with potential relevance to rental price determination.
 
@@ -323,64 +229,198 @@ Where:
 * $\theta_j$ are the coefficients that represent the relationship between each state and the dependent variable.
 * $\epsilon$ is the error term, capturing unobserved factors.
 
-Model Estimation: To estimate the coefficients, we employed Ordinary Least Squares (OLS) regression. Diagnostic tests were conducted to validate the model assumptions:
+Note we have elected to go with a two way fixed effects model to increase the accuracy of time and regional trends.
+
+Model Estimation: To estimate the coefficients, we employed Ordinary Least Squares (OLS) regression. All models were estimated with heteroskedasticity-robust standard errors. Diagnostic tests were conducted to validate the model assumptions:
 
 Multicollinearity: Variance Inflation Factors (VIF) were calculated to ensure no strong multicollinearity among the predictors.
-The model was implemented using the following code, which provided the estimated coefficients:
 
-```{r, cache=FALSE}
-data <- data %>% select(-fips)
-fit.lm_acs <- lm(cpi_rent ~ ., data)
-summary(fit.lm_acs)
+Results for this primary model are displayed as column 1 of Table \@ref(tab:acsresults)
+```{r acsresults, eval=doacs, results='asis'}
+fit.lm_acs <- lm(cpi_rent ~ year + density + metro +
+                        hhincome +
+                        rooms+ builtyr2+ unitsstr+ bedrooms+
+                        age+ married+ male+
+                        statefip, data)
+
+fit1 = coeftest(fit.lm_acs, vcov=vcovHC, type="HC0")
+
+fit.lm_acs_noyear <- lm(cpi_rent ~ density + metro +
+                        hhincome +
+                        rooms+ builtyr2+ unitsstr+ bedrooms+
+                        age+ married+ male+
+                        statefip, data)
+
+fit2 = coeftest(fit.lm_acs_noyear, vcov=vcovHC, type="HC0")
+
+fit.lm_acs_nostate <- lm(cpi_rent ~ year + density + metro +
+                        hhincome +
+                        rooms+ builtyr2+ unitsstr+ bedrooms+
+                        age+ married+ male, data)
+
+fit3 = coeftest(fit.lm_acs_nostate, vcov=vcovHC, type="HC0")
+
+fit.lm_acs_nostatenoyear <- lm(cpi_rent ~ density + metro +
+                        hhincome +
+                        rooms+ builtyr2+ unitsstr+ bedrooms+
+                        age+ married+ male, data)
+
+fit4 = coeftest(fit.lm_acs_nostatenoyear, vcov=vcovHC, type = "HC0")
+
+stargazer(fit1, fit2, fit3, fit4, omit = c("year", "state"), dep.var.labels.include = F,
+          column.labels = c("Main specification", "Time FEs only", "State FEs only", "No FEs"),
+          dep.var.caption = "", label = "acsresults", header = FALSE, title = "Results of regressions")
 ```
 
-To ensure robustness, we applied robust standard errors using the code below:
 
-```{r, cache=FALSE}
-coeftest(fit.lm_acs, vcov=vcovHC, type="HC0")
-```
+The VIF scores were computed to further validate the model in Table \@ref(tab:acsvif)
 
-The VIF scores were computed to further validate the model:
-
-```{r, cache=FALSE}
+```{r acsvif, eval=doacs}
 vif <- vif(fit.lm_acs)
-print(vif)
+kable(vif, format = "markdown", caption = "VIF values")
 ```
 
-Before analyzing the results, we note that all estimates are statistically significant. After applying robust standard errors, each estimated coefficient remains significant. Furthermore, we computed the Variance Inflation Factor (VIF) scores to ensure the validity of the model. All VIF scores are below 5, indicating no strong multicollinearity. This confirms that our model is both reliable and robust.
+Before analyzing the results, we note that all estimates are statistically significant, except for the coefficient of $male$. After applying robust standard errors, each estimated coefficient remains significant. Furthermore, we computed the Variance Inflation Factor (VIF) scores to ensure the validity of the model. All VIF scores are below 5, indicating no strong multicollinearity. This confirms that our model is both reliable and robust.
 
 Model Overview:
-The regression model included a total of 79 predictors and was fitted using a dataset with 13,341,750 observations. The R-squared of 0.4267 indicates that 42.67% of the variance in CPI Rent is explained by the included predictors. The F-statistic ($ 1.257e^5, p < 2.2e^{-16}$) demonstrates that the overall model is statistically significant.
+The regression model included a total of 79 predictors and was fitted using a dataset with 13,341,750 observations. The R-squared of 0.4315 indicates that 43.15% of the variance in CPI Rent is explained by the included predictors. The F-statistic ($ 1.257e^5, p < 2.2e^{-16}$) demonstrates that the overall model is statistically significant.
 
 Key Results:
 
-Time Trends:
+1. Time Trends:
 
-Yearly dummy variables were included to capture temporal trends. Statistically significant coefficients ($p < 0.001$) indicate clear yearly variation in CPI Rent. For example, CPI Rent increased significantly in 2020 compared to the base year($\hat{\gamma_{2020}} = 49.41$, $p < 2e^{-16}$) and declined in 2011 compared to the base year ($\hat{\gamma_{2011}} = -6.86$, $p < 2e^{-16}$).
+Yearly dummy variables were included to capture temporal trends. Statistically significant coefficients ($p < 0.001$) indicate clear yearly variation in CPI Rent. For example, CPI Rent increased significantly in 2020 compared to the base year($\hat{\gamma_{2020}} = 71.80$, $p < 2.2e^{-16}$).
 
-Population Density:
+2. Population Density:
 
-The coefficient for population density was small but highly significant ($\hat{\beta_{density}} = 0.003$, $p < 2e^{-16}$) indicating that higher population density is associated with marginal increases in the Consumer Price Index (CPI) Rent. However, given that population density values across most regions in the dataset are not significantly high, this suggests that density has a notable impact primarily in areas with exceptionally high population densities. This means the effect of population density on CPI Rent is significant, but only for a select group of regions where density levels are substantially higher than average.
+The coefficient for population density was small but highly significant ($\hat{\beta_{density}} = 0.003$, $p < 2.2e^{-16}$) indicating that higher population density is associated with marginal increases in the Consumer Price Index (CPI) Rent. However, given that population density values across most regions in the dataset are not significantly high, this suggests that density has a notable impact primarily in areas with exceptionally high population densities. This means the effect of population density on CPI Rent is significant, but only for a select group of regions where density levels are substantially higher than average.
 
-Metro Areas:
-The presence of metro designation (`metro == TRUE`) substantially increased CPI Rent ($\hat{\beta_{metro}} = 166.5$,$p < 2e^{16}$).
+3. Metro Areas:
+The presence of metro designation (`metro == TRUE`) substantially increased CPI Rent ($\hat{\beta_{metro}} = 173.7$,$p < 2.2e^{16}$).
 
-State Effects:
-State fixed effects (`fips_state`) showed considerable variation. For example, being in state 15 (Hawaii) significantly increased CPI Rent ($\hat{\theta_{15}} = 527.3$, $p < 2e^{-16}$) relative to the baseline.
+4. State Effects:
+State fixed effects (`fips_state`) showed considerable variation. For example, being in state 15 (Hawaii) significantly increased CPI Rent ($\hat{\theta_{15}} = 552.87$, $p < 2.2e^{-16}$) relative to the baseline.
 
-Housing Characteristics:
-Variables like the number of rooms ($\hat{\beta_{rooms}} = 22.44$, $p < 2e^{-16}$) and the presence of complete plumbing ($\hat{\beta_{plumbing}} = 125.0$, $p < 2e^{-16}$) were positively associated with CPI Rent. Conversely, older buildings (`builtyr2`) and lack of a kitchen had significant negative effects.
+5. Housing Characteristics:
+Variables like the number of rooms ($\hat{\beta_{rooms}} = 20.82$, $p < 2.2e^{-16}$) and the presence of complete plumbing ($\hat{\beta_{plumbing}} = 129.4$, $p < 2.2e^{-16}$) were positively associated with CPI Rent. Conversely, older age and inclusion of a kitchen had negative effects.
 
-3. Variance Inflation Factor (VIF) Analysis:
-The VIF values for all predictors were below 3, except for rooms (GVIF =  $3.039$), indicating no severe multicollinearity. This strengthens the robustness of the model's coefficient estimates.
+6. Variance Inflation Factor (VIF) Analysis:
+The VIF values for all predictors were below 3, except for bedrooms (GVIF =  $3.019$), indicating no severe multicollinearity. This strengthens the robustness of the model's coefficient estimates.
 
-4. Residual Analysis:
-The residual standard error was $340.4$, indicating the average deviation between observed and predicted values. Residuals ranged from $-6,398.4$ to $4,859.9$, with a median near zero, suggesting an overall balanced fit.
+7. Residual Analysis:
+The residual standard error was $353$, indicating the average deviation between observed and predicted values. Residuals ranged from $-6,089.9$ to $4,835.5$, with a median near zero, suggesting an overall balanced fit.
 
-5. Limitations and Future Research:
-Although the model captures significant variance, $57.33%$ of CPI Rent variability remains unexplained. Including additional predictors like economic trends, housing policies, and neighborhood amenities could enhance model performance.
+8. Limitations and Future Research:
+Although the model captures significant variance, $56.85%$ of CPI Rent variability remains unexplained. Including additional predictors like economic trends, housing policies, and neighborhood amenities could enhance model performance.
+
+Additionally, to further justify the use of a two-way fixed effects model, we conducted additional regressions on house rents using three alternative models:
+
+* Time fixed effects only (no state fixed effects),
+* State fixed effects only (no time fixed effects), and
+* A model without either time or state fixed effects.
+
+The results of these models are also summarized in Table \@ref(tab:acsresults).
+
+Focusing on the adjusted R-squared values, we observe a significant drop when removing the state fixed effects, which suggests that much of the variation in the dependent variable is explained by differences across states. While removing time fixed effects doesn't result in a similar reduction in R-squared, this does not mean that time fixed effects are not important. There may be a number of possible explanations for this, the most likely is that time fixed effects may just capture less variation in the outcome compared to state fixed effects, or that their contribution to the variation is already explained by state effects or other independent variable in the model.
+
+Thus, while the adjusted R-squared metric is an important metric, including time fixed effects is justified by their ability to control for temporal unobservable trends that would otherwise bias the model. Therefore, a two-way fixed effects model ensures a robust and reliable estimation of house rents across the U.S.
+
+# Analysis of Specific Factors
+
+## Data and Description
+For rents, we use the data set of Fair Market Rents provided by the U.S. Department of Housing and Urban Development, which provides annual data on the 40th percentile of rent on a county level from 1995 onwards. Data on sales prices come from the Survey of Construction, administered by the U.S. Census Bureau and U.S. Department of Housing and Urban Development, and come in the form of quarterly median sales price of houses sold in the United States, from the start of 1963 until July 2024. Construction price indices for houses sold and houses under construction are also sourced from the Survey of Construction data. Indices for houses under construction are monthly from 1963, while indices for houses sold are quarterly from 1963. Both are Laspreyes price indices, with the houses sold index being based on the cost of building the house and the value of the land, and the houses under construction index being based on only the cost of building the house. The CPI series used is the index for all urban consumers and all items, and comes from the Bureau of Labor Statistics, and is available on a monthly basis until September 2024. We also use the Realtor.com data set as explained earlier
+
+### Analyzing Supply Costs
+
+```{r}
+constr = read_csv("CausalAnalysis/Final/ConstructionPriceIndex/CONSTR.csv")
+
+plotConstrVars = function(vars, after = 2012){
+  constr2 = constr %>% 
+    filter(year >= after) %>% 
+    pivot_longer(all_of(vars))
+  
+  breaks = (constr2$date %>% unique)[seq(1, length(constr$date), by = 6)]
+  
+  ggplot(constr2) +
+    geom_line(aes(x = date, y = value)) +
+    facet_wrap(name ~ ., ncol = 1, scales = "free_y") +
+    scale_x_continuous(breaks = breaks,
+                       guide = guide_axis(angle = 45))
+}
+```
 
 
+Traditional economic models state that the price of a good is affected by the demand and supply functions. A change in the supply function for housing from, for example, an increase in construction costs or the price of land would increase the price of housing. We can control for these factors with the Survey of Construction's price indices. We divide median price of purchased houses by the houses sold index to yield the variable sold_corrected: the price of houses relative to cost of construction and land, thus controlling for the cost of supply.
 
+As shown in Figure \@ref(fig:allyears), House price data shows a significant break around 2011, in the aftermath of the Great Recession. Given the massive effect the Great Recession had on the housing market and the large government response, the sharp increase in housing prices may represent a structural break in the data. For this reason we prefer to limit our data range to 2012 onwards.
+
+```{r allyears, fig.cap = 'Graph of sold corrected 1992-2023'}
+plotConstrVars("sold_corrected", 0) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 0))
+```
+In figure \@ref(fig:causprices) We contrast prices controlled for inflation only with CPI (cpi_mspus) to prices controlled for with the houses sold index. The most striking feature of this figure is that while cpi_mspus sees a sharp increase in prices starting at roughly 2020, sold_corrected remains stable. Additionally, while cpi_mspus increases steadily until roughly 2018 and stabilizes until 2020, sold_corrected starts stable and then decreases.
+```{r causprices, message=FALSE, fig.cap = 'Comparison between cpi mspus and sold corrected'}
+plotConstrVars(c("sold_corrected", "cpi_mspus"))
+```
+While the methodology does not imply a causal interpretation, it seems highly likely that trends in the housing price are caused by trends in construction costs. Supply costs are a major factor in the cost of almost all goods, and it is hard to conceive of any confounding variable correlated with price and supply cost that could dwarf the effect of supply. Additionally, we graph inflation-controlled housing prices (cpi_mspus) and the inflation-controlled houses sold index (cpi_sold) in Figure \@ref(fig:causcpi) to show that trends in both coincide.
+```{r causcpi, fig.cap = 'Comparison between cpi mspus and CPI-controlled houses sold index'}
+plotConstrVars(c("cpi_mspus", "cpi_sold"))
+```
+
+One factor that could affect house sales price on the demand side is the interest rate: a lower interest rate increases the demand for housing due to more favorable terms on mortgages. To eliminate this factor, we also use the price of houses purchased with cash (full price up front with no mortgage or loan) which should be unaffected by the interest rate. This specification is presented in Figure \@ref(fig:causcash) After controlling with the houses sold index, we see the same general trend, albeit with much more volatility. The average price is stable until 2018, starts decreasing until 2020, then seems to stabilize again.
+```{r causcash, fig.cap = 'Prices of houses purchased with cash controlled with houses sold index'}
+plotConstrVars("sold_corrected_cash")
+```
+
+Additionally, we can control using the houses under construction index instead, which only accounts for construction costs, and contrast with the price controlled by houses sold index. We present this specification in Figure \@ref(fig:causconstr) Both variables appear near-identical, indicating construction costs as the main driver of the effect we see.
+```{r causconstr, fig.cap = 'Comparison of houses sold and construction indices'}
+plotConstrVars(c("constr_corrected", "sold_corrected"))
+```
+
+## Zoning synthetic controls
+The practice of zoning, or restricting what types of construction can occur on certain areas, is often blamed for driving up the price of housing by artificially limiting supply. One particular form of zoning that receives significant attention is single-family zoning, only allowing the construction of single-family homes. As part of the comprehensive Minneapolis 2040 plan, taking effect January 1, 2020, Minneapolis passed a law ending single-family zoning, a feat few other cities have matched. Additionally, the city implemented inclusionary zoning, requiring developers to have some of their units to be rented at prices below certain percentages of median income in the area.
+
+To assess the effectiveness of these policies in reducing local rents, we utilize a synthetic control approach, as we have no reason to believe the parallel trends assumption should hold. The control group is comprised of metro areas as designated by the U.S. Department of Housing and Urban Development in the states of Minnesota (which contains Minneapolis) and Wisconsin. One limitation of our data is that the metro area containing Minneapolis also contains the slightly smaller neighboring city of St. Paul, which was not directly affected by the laws passed. This should dilute the overall effect, but so long as there are no simultaneous shocks to housing prices in St. Paul, a causal interpretation is still possible. We could also expect to see spillover effects decreasing rent in St. Paul as landlords compete with lower prices. For predictive variables, we use population in 2010 and market factors from 2016.
+
+Our results indicate a increase in rent in the metro area containing Minneapolis and St. Paul compared to the synthetic control. As outlined in Abadie et al. (2010), we compute Fisher's Exact p-value as 0.5714, indicating no signifiant change in rents. The results of the synthetic control model are presented in Table \@ref(tab:caussynthtable) and Figure \@ref(fig:caussynthfig). While the synthetic control fits very well from 2018-2020, the two years before the intervention period, it does not fit as well in the years before, which is a possible limitation of the model. 
+
+```{r caussynthfig, fig.cap = 'Synthetic vs. observed fair market rent'}
+fmr_synth = read_csv("CausalAnalysis/Final/Minnesota/FMR_synth.csv")
+
+treat_date = 2020
+treated_unit = "Minneapolis-St. Paul-Bloomington, MN-WI HUD Metro FMR Area"
+
+synth = fmr_synth %>%
+  synthetic_control(outcome = price,
+                    unit = areaname22,
+                    time = year,
+                    i_unit = treated_unit,
+                    i_time = treat_date) %>% 
+  generate_predictor(time_window = 2016,
+                     populat = pop2010,
+                     mdom = median_days_on_market,
+                     nlc = new_listing_count,
+                     plc = pending_listing_count,
+                     pic = price_increased_count,
+                     msf = median_square_feet
+                     ) %>%
+  generate_weights() %>% 
+  generate_control()
+
+plot_trends(synth) + plot_theme + ggtitle("")
+```
+
+```{r caussynthtable}
+grab_synthetic_control(synth) %>% 
+  rename(Synthetic = synth_y, Observed = real_y, Year = time_unit) %>% 
+  mutate(difference = Observed - Synthetic) %>% 
+  kable(caption = "Results of synthetic control")
+```
+We observe an increase in rents instead of a decrease in rents, alleviating concerns that insignificance is caused by the breadth of the metro area containing Minneapolis. One reason for the insignificance of the effect to rent is that the elimination of single family zoning was less effective in reality than may have been imagined. Of the roughly 12,600 housing structures authorized in the Minneapolis-St Paul. metro area, only roughly 350 were 2-4 units^[https://www.census.gov/construction/bps/index.html], which could only a house a tiny fraction of the population of the cities and would make a small dent in rent prices.
+
+\newpage
+
+# References
 
 
