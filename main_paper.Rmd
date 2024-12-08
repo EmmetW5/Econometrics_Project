@@ -6,33 +6,12 @@ output:
   bookdown::pdf_document2:
     toc: yes
   html_document: default
+classoption: table
 fig_caption: yes
 bibliography: refs.bib
+header-includes: \usepackage{float} \usepackage{graphicx} \usepackage[margin=1in]{geometry} \usepackage{amsmath} \usepackage{tabularx} \usepackage{amssymb} \usepackage{textcomp} \usepackage{fancyhdr} \usepackage{setspace} \usepackage[shortlabels]{enumitem} \title{Market factors affecting housing prices}
 nocite: '@*'
 ---
-
-```{r, include = FALSE}
-# 2col format
-# ---
-# title: "Market Factors Affecting Housing Prices"
-# author: "A. Laphond, M. Troeger, Mohamed XX, E. Whitehead"
-# date: "`r Sys.Date()`"
-# output:
-#   bookdown::pdf_document2:
-#     includes:
-#       in_header: "longtable.tex"
-#   html_document: default
-#   toc: yes
-# fig_caption: yes
-# bibliography: refs.bib
-# nocite: '@*'
-# classoption:
-#   - twocolumn
-# header-includes:
-#   - \setlength{\columnsep}{32pt}
-# ---
-# knitr::opts_knit$set(kable.force.latex = TRUE)
-```
 
 
 ```{r, include=FALSE}
@@ -54,15 +33,16 @@ library(sf)
 
 knitr::opts_chunk$set(out.width = '75%', out.height = '75%',
                       echo = FALSE, fig.align = 'center', 
-                      message = FALSE)
+                      message = FALSE, include = FALSE, eval = FALSE)
 
-plot_theme = theme(
+plot_theme = theme_minimal() + theme(
   text = element_text(size = 16),
   axis.text = element_text(size = 12)
 )
 ggplot2::theme_set(plot_theme)
 
 doacs = TRUE
+docaus = TRUE
 ```
 
 \begin{center}
@@ -73,8 +53,104 @@ knitr::include_graphics("uni.jpg")
 
 \newpage
 
+\doublespacing
+\fontsize{12}{22}
+
+# Introduction
+
 # Literature Review
 Kendall and Tulip (2018) quantify the effect of zoning on detached house prices in large cities in Australia. They argue that in the absence of zoning, the market for housing is competitive, as there are low barriers to entry and a large number of firms involved in development and construction. Additionally, they note that in US cities with loose zoning laws, prices are close to costs. Thus, the price of a property can be decomposed into the cost of the structure and land, and zoning representing supply distortions. With this approach, they find large price increases attributable to zoning. For example, in 2016, zoning raised the price of detached houses by 73 percent in Sydney and 69 percent in Melbourne. 
+
+# Realtor Data
+To see the effect of various market features on the median listing price of houses,
+we use Resedential Data from Realtor.com which includes various housing market features listed by county Federal Information Processing Series (FIPS) codes and by date.
+We extract `year` from the `date` field and, for parsimony, deselect all time variables with the exception of `year` and summarize the dataset by mean over `year` and `fips`.
+This greatly reduces dimensionality and aids computation.
+
+The data set contains 10,176 `NA` values from 4,761 observations (approximately 16.9% of all observations) which predominantly belong to rural counties where such information is difficult to obtain or is simply unavailable.
+Consequently, we elide these variables in coming analysis.
+Even with 16.9% of observations removed, Figure \@ref(fig:rdcmap) indicates that most of the country is still represented (counties with data are colored red):
+
+```{r rdcmap, fig.cap = 'Counties with non-NA data'}
+knitr::include_graphics("Realtor_withoutNA_crop.png")
+```
+
+We further augment the data set by adding annually averaged consumer price index (CPI) as a measure of inflation. Table \@ref(table:realtor) visually summarizes the adjusted data set.
+
+\begin{table}[h!]
+\centering
+\rowcolors{1}{}{lightgray!25}
+\begin{tabularx}{\textwidth}{X|cccc}
+                        \textbf{Variable} & $\mathbf{\mu}$ & $\mathbf{\sigma}$ & \textbf{Min} & \textbf{Max} \\
+                        \hline
+			fips & 30642.6 & 14957.9 & 01001 & 56045 \\
+			year & 2020.3 & 2.54931 & 2016 & 2024 \\
+			median\_listing\_price & 270042.4 & 196290.3 & 35750 & 4780104.1 \\
+			active\_listing\_count & 337.33 & 920.55 & 1 & 21778.8 \\
+			median\_days\_on\_market & 71.108 & 23.526 & 4 & 283 \\
+			new\_listing\_count & 154.409 & 422.650 & 0 & 8615.33 \\
+			price\_increased\_count & 11.18 & 47.42 & 0 & 1106.67 \\
+			price\_reduced\_count & 97.23 & 317.94 & 0 & 9120 \\
+			pending\_listing\_count & 165.70 & 498.57 & 0 & 11212 \\
+			median\_listing\_price\_per\_square\_foot & 143.27 & 99.41 & 20 & 1877.11 \\
+			median\_square\_feet & 1874.96 & 326.90 & 576 & 4844.09 \\
+			average\_listing\_price & 377056.26 & 353401.63 & 35750 & 11998834.08 \\
+			total\_listing\_count & 501.50 & 1361.03 & 1 & 30349.33 \\
+			pending\_ratio & 0.541 & 0.472 & 0 & 5.581 \\
+			cpi & 0.031 & 0.0219 & 0.012 & 0.08
+\end{tabularx}
+\caption{Realtor Data Set Summary}
+\label{table:realtor}
+\end{table}
+
+## Realtor Data Processing
+
+Before we begin our analysis, we start with an exploratory ordinary least squares (OLS) regression on the dependent variable `median_listing_price` to identify variables with a variance inflation factor (VIF) greater than 10, and then deselect those variables as well as those that *cheat* by also reflecting pricing information.
+In so doing, we remove `active_listing_count`, `total_listing_count`, `pending_listing_count`, `median_listing_price_per_square_foot`, and `average_listing_price`.
+We further subset the data to exclude entries for 2024, which is incomplete and does not have an annual average CPI value.
+
+We further observe that a handful of counties are significantly wealthier than others, and consequently have much larger median listing prices.
+Thus, we programatically remove outliers within the bottom 5% and top 5% of `median_listing_price`.
+To account for time effects in the panel data, we adjust each observation's value of `median_listing_price` by its respective inflation rate.
+Finally, we eliminate spatial effects by group demeaning the `median_listing_price` by FIPS and by introducing state factors which we favor in place of FIPS factors.
+
+## Realtor Analysis
+
+We now specify an unrestricted OLS regression with `median_listing_price` as our dependent variable and employ backward stepwise selection to produce a model with only the most important features.
+
+We arrive at a model of the form
+\begin{align*}
+	\widehat{medianListingPrice}=-79010&-44.6\cdot medianDaysOnMarket\\
+	&-26.9\cdot priceIncreasedCount\\
+	&+13.37\cdot medianSquareFeet\\
+	&+3795\cdot pendingRatio\\
+	&+state\; factors +year\; factors
+\end{align*}
+With $\bar{R}^2=0.6$ and $F=489.5$.
+Figure \@ref(fig:rdcprice) depicts the relationship between $medianListingPrice$ against $year$, with data points in blue and our predicted $\widehat{medianListingPrice}$ in red:
+
+(\begin{figure}[H]
+	\centering
+  \includegraphics[page=1,width=.4\textwidth]{Rplots.pdf}
+	\caption{Median Listing Price vs. Year Violin Plot}
+	\label{fig:rdcprice}
+\end{figure}
+
+Despite controlling for inflation, we have a strong time trend.
+Of particular interest is the relatively large and highly significant coefficient on $pendingRatio$: $\hat\beta=\$3,795$ with $p<<0.05$.
+Figure \@ref(fig:rdcpending) shows the change in $pendingRatio$ with time:
+
+\begin{figure}[H]
+	\centering
+	\caption{Pending Ratio vs. Year}
+	\label{fig:rdcpending}
+	\includegraphics[page=2,width=.4\textwidth]{Rplots.pdf}
+\end{figure}
+
+As the pending ratio of housing is calculated as the share of pending listings over the share of active listings, an increase therefore indicates either a great leap in pending listings, or a major contraction in active listings.
+Because the bump takes place during the COVID-19 pandemic, it is likely the decrease comes from a precipitous drop in active listings as work from home became the norm and people were largely locked in place.
+The Realtor data for $activeListingCount$ supports this, marking a continuous downward trend starting in March 2020 and having a point of inflection in February 2022.
+These findings are consistent with those of Yörök (2022).
 
 # ACS Analysis
 
@@ -267,9 +343,14 @@ fit.lm_acs_nostatenoyear <- lm(cpi_rent ~ density + metro +
 
 fit4 = coeftest(fit.lm_acs_nostatenoyear, vcov=vcovHC, type = "HC0")
 
+rsq = function(lm_model) summary(lm_model)$adj.r.squared
+
 stargazer(fit1, fit2, fit3, fit4, omit = c("year", "state"), dep.var.labels.include = F,
           column.labels = c("Main specification", "Time FEs only", "State FEs only", "No FEs"),
-          dep.var.caption = "", label = "tab:acsresults", header = FALSE, title = "Results of regressions")
+          dep.var.caption = "", label = "tab:acsresults", header = FALSE, 
+          title = "Results of regressions", 
+          add.lines = list(c("Adjusted $R^2$", rsq(fit.lm_acs), rsq(fit.lm_acs_noyear),
+                             rsq(fit.lm_acs_nostate), rsq(fit.lm_acs_nostatenoyear))))
 ```
 
 
@@ -328,7 +409,7 @@ Thus, while the adjusted R-squared metric is an important metric, including time
 # Analysis of Specific Factors
 
 ## Data and Description
-For rents, we use the data set of Fair Market Rents provided by the U.S. Department of Housing and Urban Development, which provides annual data on the 40th percentile of rent on a county level from 1995 onwards. Data on sales prices come from the Survey of Construction, administered by the U.S. Census Bureau and U.S. Department of Housing and Urban Development, and come in the form of quarterly median sales price of houses sold in the United States, from the start of 1963 until July 2024. Construction price indices for houses sold and houses under construction are also sourced from the Survey of Construction data. Indices for houses under construction are monthly from 1963, while indices for houses sold are quarterly from 1963. Both are Laspreyes price indices, with the houses sold index being based on the cost of building the house and the value of the land, and the houses under construction index being based on only the cost of building the house. The CPI series used is the index for all urban consumers and all items, and comes from the Bureau of Labor Statistics, and is available on a monthly basis until September 2024. We also use the Realtor.com data set as explained earlier
+For rents, we use the data set of Fair Market Rents provided by the U.S. Department of Housing and Urban Development, which provides annual data on the 40th percentile of rent on a county level from 1995 onwards. Data on sales prices come from the Survey of Construction, administered by the U.S. Census Bureau and U.S. Department of Housing and Urban Development, and come in the form of quarterly median sales price of houses sold in the United States, from the start of 1963 until July 2024. Construction price indices for houses sold and houses under construction are also sourced from the Survey of Construction data. Indices for houses under construction are monthly from 1963, while indices for houses sold are quarterly from 1963. Both are Laspreyes price indices, with the houses sold index being based on the cost of building the house and the value of the land, and the houses under construction index being based on only the cost of building the house. The CPI series used is the index for all urban consumers and all items, and comes from the Bureau of Labor Statistics, and is available on a monthly basis until September 2024. We also use the Realtor.com data set as explained earlier.
 
 ### Analyzing Supply Costs
 
@@ -366,6 +447,7 @@ plotConstrVars(c("sold_corrected", "cpi_mspus"))
 While the methodology does not imply a causal interpretation, it seems highly likely that trends in the housing price are caused by trends in construction costs. Supply costs are a major factor in the cost of almost all goods, and it is hard to conceive of any confounding variable correlated with price and supply cost that could dwarf the effect of supply. Additionally, we graph inflation-controlled housing prices (cpi_mspus) and the inflation-controlled houses sold index (cpi_sold) in Figure \@ref(fig:causcpi) to show that trends in both coincide.
 ```{r causcpi, fig.cap = 'Comparison between cpi mspus and CPI-controlled houses sold index'}
 plotConstrVars(c("cpi_mspus", "cpi_sold"))
+plotConstrVars("cpi_sold")
 ```
 
 One factor that could affect house sales price on the demand side is the interest rate: a lower interest rate increases the demand for housing due to more favorable terms on mortgages. To eliminate this factor, we also use the price of houses purchased with cash (full price up front with no mortgage or loan) which should be unaffected by the interest rate. This specification is presented in Figure \@ref(fig:causcash) After controlling with the houses sold index, we see the same general trend, albeit with much more volatility. The average price is stable until 2018, starts decreasing until 2020, then seems to stabilize again.
@@ -385,7 +467,7 @@ To assess the effectiveness of these policies in reducing local rents, we utiliz
 
 Our results indicate a increase in rent in the metro area containing Minneapolis and St. Paul compared to the synthetic control. As outlined in Abadie et al. (2010), we compute Fisher's Exact p-value as 0.5714, indicating no signifiant change in rents. The results of the synthetic control model are presented in Table \@ref(tab:caussynthtable) and Figure \@ref(fig:caussynthfig). While the synthetic control fits very well from 2018-2020, the two years before the intervention period, it does not fit as well in the years before, which is a possible limitation of the model. 
 
-```{r caussynthfig, fig.cap = 'Synthetic vs. observed fair market rent'}
+```{r caussynthfig, fig.cap = 'Synthetic vs. observed fair market rent', eval = docaus}
 fmr_synth = read_csv("CausalAnalysis/Final/Minnesota/FMR_synth.csv")
 
 treat_date = 2020
@@ -411,13 +493,15 @@ synth = fmr_synth %>%
 plot_trends(synth) + plot_theme + ggtitle("")
 ```
 
-```{r caussynthtable}
+```{r caussynthtable, eval = docaus}
 grab_synthetic_control(synth) %>% 
   rename(Synthetic = synth_y, Observed = real_y, Year = time_unit) %>% 
-  mutate(difference = Observed - Synthetic) %>% 
+  mutate(Difference = Observed - Synthetic) %>% 
   kable(caption = "Results of synthetic control")
 ```
 We observe an increase in rents instead of a decrease in rents, alleviating concerns that insignificance is caused by the breadth of the metro area containing Minneapolis. One reason for the insignificance of the effect to rent is that the elimination of single family zoning was less effective in reality than may have been imagined. Of the roughly 12,600 housing structures authorized in the Minneapolis-St Paul. metro area, only roughly 350 were 2-4 units^[https://www.census.gov/construction/bps/index.html], which could only a house a tiny fraction of the population of the cities and would make a small dent in rent prices.
+
+# Conclusion
 
 \newpage
 

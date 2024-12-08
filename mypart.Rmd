@@ -1,0 +1,130 @@
+---
+output:
+  pdf_document
+classoption: table
+fontsize: 12pt
+header-includes: \usepackage{float} \usepackage{graphicx} \usepackage{biblatex} \addbibresource{file.bib} \usepackage[margin=1in]{geometry} \usepackage{amsmath} \usepackage{tabularx} \usepackage{amssymb} \usepackage{textcomp} \usepackage{fancyhdr} \usepackage{setspace} \usepackage[shortlabels]{enumitem} \title{Market factors affecting housing prices} \author{Emmet Whitehead, Mohamed XX, Alejandro XX, \& Max Troeger} \date{December XX 2024}
+---
+
+```{=latex}
+\pagestyle{fancy}
+\fancyhead{} % clear all header fields
+\fancyhead[RE,RO]{header info}
+\fancyhead[LE,LO]{\textbf{ECON 6030 - group project}}
+\fancyfoot{} % clear all footer fields
+\fancyfoot[LE,RO]{\thepage}
+\begin{titlepage}
+   \begin{center}
+       \vspace*{1cm}
+       \textbf{Market factors affecting housing prices}\\
+       \vspace{0.5cm}
+       Subtitle\\
+       \vspace{1.5cm}
+       \textbf{E. Whitehead, Mohamed XX, Alejandro XX, \& M. Troeger}
+       \vfill
+       ECON 4580/6030 - Data Analysis in Economics and Finance \\ Dr. Rui Fan\\
+       \vspace{0.8cm}
+       \includegraphics[width=0.3\textwidth]{uni.jpg}
+       \vspace{0.8cm}
+
+       Department of Economics\\
+       Rensselaer Polytechnic Institute\\
+       Troy, NY, USA\\
+       11 Nov. 2024
+   \end{center}
+\end{titlepage}
+\newpage
+\tableofcontents
+\newpage
+\doublespacing
+%%%%%%% End Header %%%%%%%
+```
+
+## Realtor Data
+To see the effect of various market features on the median listing price of houses,
+we use Resedential Data from Realtor.com which includes various housing market features listed by county Federal Information Processing Series (FIPS) codes and by date.
+We extract `year` from the `date` field and, for parsimony, deselect all time variables with the exception of `year` and summarize the dataset by mean over `year` and `fips`.
+This greatly reduces dimensionality and aids computation.
+
+The data set contains 10,176 `NA` values from 4,761 observations (approximately 16.9% of all observations) which predominantly belong to rural counties where such information is difficult to obtain or is simply unavailable.
+Consequently, we elide these variables in coming analysis.
+Even with 16.9% of observations removed, Figure 1 indicates that most of the country is still represented (counties with data are colored red):
+
+![Counties Represented by Realtor with `NA`s Elided](Realtor_withoutNA.png)
+
+We further augment the data set by adding annually averaged consumer price index (CPI) as a measure of inflation.
+Table 1 visually summarizes the adjusted data set:
+
+```{=latex}
+\begin{table}[h!]
+\centering
+\rowcolors{1}{}{lightgray!25}
+\begin{tabularx}{\textwidth}{X|cccc}
+                        \textbf{Variable} & $\mathbf{\mu}$ & $\mathbf{\sigma}$ & \textbf{Min} & \textbf{Max} \\
+                        \hline
+			fips & 30642.6 & 14957.9 & 01001 & 56045 \\
+			year & 2020.3 & 2.54931 & 2016 & 2024 \\
+			median\_listing\_price & 270042.4 & 196290.3 & 35750 & 4780104.1 \\
+			active\_listing\_count & 337.33 & 920.55 & 1 & 21778.8 \\
+			median\_days\_on\_market & 71.108 & 23.526 & 4 & 283 \\
+			new\_listing\_count & 154.409 & 422.650 & 0 & 8615.33 \\
+			price\_increased\_count & 11.18 & 47.42 & 0 & 1106.67 \\
+			price\_reduced\_count & 97.23 & 317.94 & 0 & 9120 \\
+			pending\_listing\_count & 165.70 & 498.57 & 0 & 11212 \\
+			median\_listing\_price\_per\_square\_foot & 143.27 & 99.41 & 20 & 1877.11 \\
+			median\_square\_feet & 1874.96 & 326.90 & 576 & 4844.09 \\
+			average\_listing\_price & 377056.26 & 353401.63 & 35750 & 11998834.08 \\
+			total\_listing\_count & 501.50 & 1361.03 & 1 & 30349.33 \\
+			pending\_ratio & 0.541 & 0.472 & 0 & 5.581 \\
+			cpi & 0.031 & 0.0219 & 0.012 & 0.08
+\end{tabularx}
+\caption{Realtor Data Set Summary}
+\label{table:realtor}
+\end{table}
+```
+
+
+## Realtor Data Processing
+
+Before we begin our analysis, we start with an exploratory ordinary least squares (OLS) regression on the dependent variable `median_listing_price` to identify variables with a variance inflation factor (VIF) greater than 10, and then deselect those variables as well as those that *cheat* by also reflecting pricing information.
+In so doing, we remove `active_listing_count`, `total_listing_count`, `pending_listing_count`, `median_listing_price_per_square_foot`, and `average_listing_price`.
+We further subset the data to exclude entries for 2024, which is incomplete and does not have an annual average CPI value.
+
+We further observe that a handful of counties are significantly wealthier than others, and consequently have much larger median listing prices.
+Thus, we programatically remove outliers within the bottom 5% and top 5% of `median_listing_price`.
+To account for time effects in the panel data, we encode `year` as a factor which ensures they enter our regression as a dummy variable.
+We then adjust each observation's value of `median_listing_price` by its respective inflation rate.
+Finally, we eliminate spatial effects by group demeaning the `median_listing_price` by FIPS and by introducing state factors which we favor in place of FIPS factors.
+
+## Realtor Analysis
+
+We now specify an unrestricted OLS regression with `median_listing_price` as our dependent variable and employ backward stepwise selection to produce a model with only the most important features.
+
+We arrive at a model of the form
+\begin{align*}
+	\widehat{medianListingPrice}=-79010&-44.6\cdot medianDaysOnMarket\\
+	&-26.9\cdot priceIncreasedCount\\
+	&+13.37\cdot medianSquareFeet\\
+	&+3795\cdot pendingRatio\\
+	&+state\; factors +year\; factors
+\end{align*}
+With $\bar{R}^2=0.6$ and $F=489.5$.
+Figure 2 depicts the relationship between $medianListingPrice$ against $year$, with data points in blue and our predicted $\widehat{medianListingPrice}$ in red:
+\begin{figure}[H]
+	\centering
+ 	\includegraphics[page=1,width=.4\textwidth]{Rplots.pdf}
+	\caption{Median Listing Price vs. Year Violin Plot}
+\end{figure}
+
+Despite controlling for inflation and time, we have strong market trends.
+Of particular interest is the relatively large and highly significant coefficient on $pendingRatio$: $\hat\beta=\$3,795$ with $p<<0.05$.
+Figure 3 shows the change in $pendingRatio$ with time:
+\begin{figure}[H]
+	\centering
+ 	\includegraphics[page=2,width=.4\textwidth]{Rplots.pdf}
+	\caption{Pending Ratio vs. Year}
+\end{figure}
+As the pending ratio of housing is calculated as the share of pending listings over the share of active listings, an increase therefore indicates either a great leap in pending listings, or a major contraction in active listings.
+Because the bump takes place during the COVID-19 pandemic, it is likely the decrease comes from a precipitous drop in active listings as work from home became the norm and people were largely locked in place.
+The Realtor data for $activeListingCount$ supports this, marking a continuous downward trend starting in March 2020 and having a point of inflection in February 2022.
+These findings are consistent with those of Yörök (2022).
