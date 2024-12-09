@@ -172,7 +172,7 @@ The dataset used in this study includes observations on rental housing units fro
 
 * Geographic Variables: Metropolitan versus rural location, and proximity to major urban centers.
 
-The data was cleaned to ensure accuracy and consistency. The total number of observations was 56,835,321 with 29 features but after removing rows with missing or NA values for rental price or explanatory variables (76.5%) and selecting important features, we were left with 13,341,750 observations with 15 features. 
+The data was cleaned to ensure accuracy and consistency. The total number of observations was 56,835,321 with 29 features but after removing rows with missing or NA values for rental price or explanatory variables (76.5%) and selecting important features, we were left with 13,341,750 observations with 16 features. We made some additional data cleansing that left our final dataset with 9,491,177 observations of 16 variables. 
 
 We are not including taxincl and insincl because those columns only have zeros. Likewise, we are excluding debt_incurred since it only has FALSE. Finally, year_from_start was removed given it was perfectly correlated with year.
 
@@ -235,7 +235,8 @@ map_plot <- ggplot() +
 
 map_plot
 ```
-Table \@ref(tab:acssum) provides an overview of the data distribution, highlighting significant variation in rental prices, income levels, and property characteristics. Such variation underscores the need for robust multivariate analysis to disentangle the effects of different predictors. 
+
+Table \@ref(tab:acssum) provides an overview of the data distribution, highlighting significant variation in rental prices, income levels, and property characteristics. Such variation underscores the need for robust multivariate analysis to disentangle the effects of different predictors. It's important to note that the variable `hhincome` has significantly larger values compared with the rest of the predictors, this will be important when we estimate our OLS model.
 
 ```{r acssum, eval=doacs}
 data <- data %>% mutate(statefip = as.factor(statefip)) %>% mutate(puma = as.factor(puma))
@@ -281,7 +282,7 @@ kable(summary_table2, format = "markdown", caption = "Summary Statistics for Fac
 
 ## Methodology
 
-To analyze the determinants of rental prices, we adopted a multivariate linear regression model. This method allows us to evaluate the individual contribution of each explanatory variable while controlling for the effects of others. it is important to note that our dependent variable (rent) is the gross rent adjusted by inflation. The steps taken in the analysis are as follows:
+To analyze the determinants of rental prices, we adopted a two-way fixed effects multivariate linear regression model. This method allows us to evaluate the individual contribution of each explanatory variable while controlling for the time and regional effects. it is important to note that our dependent variable (rent) is the gross rent adjusted by inflation. The steps taken in the analysis are as follows:
 
 Variable Selection: Using domain knowledge and exploratory data analysis, we identified variables with potential relevance to rental price determination.
 
@@ -296,8 +297,8 @@ $$
 Where:
 
 * $Y$ represents the dependent variable (Rent price).
-* $X_1, X_2, X_3,\dots, X_n$ are the independent variables (e.g., [density, metro, hhincome, rooms, builtyr2, unitsstr, bedrooms, age, married, male, complete_plumbing, has_kitchen]).
-* $year_i$ is the dummy variable for the year with $i \in \{1,\dots, 18\}$ as we're controlling for 18 years of data.
+* $X_1, X_2, X_3,\dots, X_n$ are the independent variables (e.g., [density, metro, hhincome, rooms, builtyr2, unitsstr, bedrooms, age, married, male]).
+* $year_i$ is the dummy variable for the year with $i \in \{1,\dots, 11\}$ as we're controlling for 11 years of data.
 * $state_j$ is the dummy variable for the state with $j \in \{1,\dots, 51\}$ as we're controlling for all 50 states and the District of Columbia.
 * $\beta_0$ is the intercept of the regression model.
 * $\beta_1, \beta_2, \beta_3,\dots, \beta_n$ are the coefficients that represent the relationship between each independent variable and the dependent variable.
@@ -305,13 +306,12 @@ Where:
 * $\theta_j$ are the coefficients that represent the relationship between each state and the dependent variable.
 * $\epsilon$ is the error term, capturing unobserved factors.
 
-Note we have elected to go with a two way fixed effects model to increase the accuracy of time and regional trends.
-
 Model Estimation: To estimate the coefficients, we employed Ordinary Least Squares (OLS) regression. All models were estimated with heteroskedasticity-robust standard errors. Diagnostic tests were conducted to validate the model assumptions:
 
 Multicollinearity: Variance Inflation Factors (VIF) were calculated to ensure no strong multicollinearity among the predictors.
 
 Results for this primary model are displayed as column 1 of Table \@ref(tab:acsresults)
+
 ```{r acsresults, eval=doacs, results='asis'}
 fit.lm_acs <- lm(cpi_rent ~ year + density + metro +
                         hhincome +
@@ -361,10 +361,10 @@ vif <- vif(fit.lm_acs)
 kable(vif, format = "markdown", caption = "VIF values")
 ```
 
-Before analyzing the results, we note that all estimates are statistically significant, except for the coefficient of $male$. After applying robust standard errors, each estimated coefficient remains significant. Furthermore, we computed the Variance Inflation Factor (VIF) scores to ensure the validity of the model. All VIF scores are below 5, indicating no strong multicollinearity. This confirms that our model is both reliable and robust.
+Before analyzing the results, we note that all estimates are statistically significant. After applying robust standard errors, each estimated coefficient remains significant. Furthermore, we computed the Variance Inflation Factor (VIF) scores to ensure the validity of the model. All VIF scores are below 5, indicating no strong multicollinearity. This confirms that our model is both reliable and robust.
 
 Model Overview:
-The regression model included a total of 79 predictors and was fitted using a dataset with 13,341,750 observations. The R-squared of 0.4315 indicates that 43.15% of the variance in CPI Rent is explained by the included predictors. The F-statistic ($ 1.257e^5, p < 2.2e^{-16}$) demonstrates that the overall model is statistically significant.
+The regression model included a total of 71 predictors and was fitted using a dataset with 8,491,117 observations. The R-squared of 0.4315 indicates that 43.15% of the variance in CPI Rent is explained by the included predictors. The F-statistic ($ 9.181e^4, p < 2.2e^{-16}$) demonstrates that the overall model is statistically significant.
 
 Key Results:
 
@@ -385,13 +385,16 @@ State fixed effects (`fips_state`) showed considerable variation. For example, b
 5. Housing Characteristics:
 Variables like the number of rooms ($\hat{\beta_{rooms}} = 20.82$, $p < 2.2e^{-16}$) and the presence of complete plumbing ($\hat{\beta_{plumbing}} = 129.4$, $p < 2.2e^{-16}$) were positively associated with CPI Rent. Conversely, older age and inclusion of a kitchen had negative effects.
 
-6. Variance Inflation Factor (VIF) Analysis:
+6. Household Income Influence:
+While it may be surprising given the low coefficient on household income ($\hat{\beta_{hhincome}} = 0.002461$, $p < 2.2e^{-16}$), this feature was the most important determinant of rent prices by far. The reason lies on the fact that, as mentioned previously, the variable `hhincome` has values ranging from $-15700.00$ up to $2580000.00$, that makes the true contribution of this variable in the model to range from $-38$ up to $6349$ which has values significantly higher than any other feature in our model. Therefore, household income is the most important predictor of rent prices. 
+
+7. Variance Inflation Factor (VIF) Analysis:
 The VIF values for all predictors were below 3, except for bedrooms (GVIF =  $3.019$), indicating no severe multicollinearity. This strengthens the robustness of the model's coefficient estimates.
 
-7. Residual Analysis:
+8. Residual Analysis:
 The residual standard error was $353$, indicating the average deviation between observed and predicted values. Residuals ranged from $-6,089.9$ to $4,835.5$, with a median near zero, suggesting an overall balanced fit.
 
-8. Limitations and Future Research:
+9. Limitations and Future Research:
 Although the model captures significant variance, $56.85%$ of CPI Rent variability remains unexplained. Including additional predictors like economic trends, housing policies, and neighborhood amenities could enhance model performance.
 
 Additionally, to further justify the use of a two-way fixed effects model, we conducted additional regressions on house rents using three alternative models:
