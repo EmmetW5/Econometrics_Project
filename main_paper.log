@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.12.5)  9 DEC 2024 11:12
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.12.5)  9 DEC 2024 11:47
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -610,7 +610,7 @@ File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 
 [2]
-<Realtor_withoutNA_crop.png, id=60, 365.86688pt x 186.6975pt>
+<Realtor_withoutNA_crop.png, id=62, 365.86688pt x 186.6975pt>
 File: Realtor_withoutNA_crop.png Graphic file (type png)
 <use Realtor_withoutNA_crop.png>
 Package pdftex.def Info: Realtor_withoutNA_crop.png  used on input line 161.
@@ -623,45 +623,45 @@ Overfull \hbox (43.45058pt too wide) in paragraph at lines 199--202
 
 
 [3{/home/mohamed/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc} <./Realtor_withoutNA_crop.png>]
-<Rplots.pdf, id=72, page=1, 505.89pt x 505.89pt>
+<Rplots.pdf, id=74, page=1, 505.89pt x 505.89pt>
 File: Rplots.pdf Graphic file (type pdf)
 <use Rplots.pdf, page 1>
-Package pdftex.def Info: Rplots.pdf , page1 used on input line 228.
+Package pdftex.def Info: Rplots.pdf , page1 used on input line 226.
 (pdftex.def)             Requested size: 187.90196pt x 187.90196pt.
 
 
 [4{/home/mohamed/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{/home/mohamed/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}]
-<Rplots.pdf, id=86, page=2, 505.89pt x 505.89pt>
+<Rplots.pdf, id=88, page=2, 505.89pt x 505.89pt>
 File: Rplots.pdf Graphic file (type pdf)
 <use Rplots.pdf, page 2>
-Package pdftex.def Info: Rplots.pdf , page2 used on input line 241.
+Package pdftex.def Info: Rplots.pdf , page2 used on input line 239.
 (pdftex.def)             Requested size: 187.90196pt x 187.90196pt.
 
 
 [5 <./Rplots.pdf> <./Rplots.pdf>]
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 265.
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 263.
 (/home/mohamed/.TinyTeX/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 
 [6{/home/mohamed/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
 
-LaTeX Warning: Reference `fig:acsmap' on page 7 undefined on input line 278.
+LaTeX Warning: Reference `fig:acsmap' on page 7 undefined on input line 276.
 
 
-LaTeX Warning: Reference `tab:acssum' on page 7 undefined on input line 280.
+LaTeX Warning: Reference `tab:acssum' on page 7 undefined on input line 278.
 
 
-LaTeX Warning: Reference `tab:acsfactors' on page 7 undefined on input line 284.
+LaTeX Warning: Reference `tab:acsfactors' on page 7 undefined on input line 282.
 
 
 
 [7]
 
-LaTeX Warning: Reference `tab:acsresults' on page 8 undefined on input line 331.
+LaTeX Warning: Reference `tab:acsresults' on page 8 undefined on input line 327.
 
 
-LaTeX Warning: Reference `tab:acsvif' on page 8 undefined on input line 333.
+LaTeX Warning: Reference `tab:acsvif' on page 8 undefined on input line 329.
 
 
 
@@ -669,62 +669,55 @@ LaTeX Warning: Reference `tab:acsvif' on page 8 undefined on input line 333.
 
 [9]
 
-LaTeX Warning: Reference `tab:acsresults' on page 10 undefined on input line 397.
+LaTeX Warning: Reference `tab:acsresults' on page 10 undefined on input line 396.
 
 
 
 [10]
-<main_paper_files/figure-latex/allyears-1.pdf, id=142, 469.755pt x 325.215pt>
+<main_paper_files/figure-latex/allyears-1.pdf, id=144, 469.755pt x 325.215pt>
 File: main_paper_files/figure-latex/allyears-1.pdf Graphic file (type pdf)
 <use main_paper_files/figure-latex/allyears-1.pdf>
-Package pdftex.def Info: main_paper_files/figure-latex/allyears-1.pdf  used on input line 420.
+Package pdftex.def Info: main_paper_files/figure-latex/allyears-1.pdf  used on input line 419.
 (pdftex.def)             Requested size: 352.31538pt x 243.91064pt.
-<main_paper_files/figure-latex/causprices-1.pdf, id=144, 469.755pt x 325.215pt>
-File: main_paper_files/figure-latex/causprices-1.pdf Graphic file (type pdf)
-<use main_paper_files/figure-latex/causprices-1.pdf>
-Package pdftex.def Info: main_paper_files/figure-latex/causprices-1.pdf  used on input line 431.
-(pdftex.def)             Requested size: 352.31538pt x 243.91064pt.
-
-LaTeX Warning: Reference `fig:causcpi' on page 11 undefined on input line 438.
-
 
 
 [11]
-
-[12 <./main_paper_files/figure-latex/allyears-1.pdf> <./main_paper_files/figure-latex/causprices-1.pdf>]
-<main_paper_files/figure-latex/causcpi-1.pdf, id=169, 469.755pt x 325.215pt>
+<main_paper_files/figure-latex/causprices-1.pdf, id=156, 469.755pt x 325.215pt>
+File: main_paper_files/figure-latex/causprices-1.pdf Graphic file (type pdf)
+<use main_paper_files/figure-latex/causprices-1.pdf>
+Package pdftex.def Info: main_paper_files/figure-latex/causprices-1.pdf  used on input line 430.
+(pdftex.def)             Requested size: 352.31538pt x 243.91064pt.
+<main_paper_files/figure-latex/causcpi-1.pdf, id=158, 469.755pt x 325.215pt>
 File: main_paper_files/figure-latex/causcpi-1.pdf Graphic file (type pdf)
 <use main_paper_files/figure-latex/causcpi-1.pdf>
-Package pdftex.def Info: main_paper_files/figure-latex/causcpi-1.pdf  used on input line 442.
+Package pdftex.def Info: main_paper_files/figure-latex/causcpi-1.pdf  used on input line 441.
 (pdftex.def)             Requested size: 352.31538pt x 243.91064pt.
-<main_paper_files/figure-latex/causcpi-2.pdf, id=170, 469.755pt x 325.215pt>
-File: main_paper_files/figure-latex/causcpi-2.pdf Graphic file (type pdf)
-<use main_paper_files/figure-latex/causcpi-2.pdf>
-Package pdftex.def Info: main_paper_files/figure-latex/causcpi-2.pdf  used on input line 450.
-(pdftex.def)             Requested size: 352.31538pt x 243.91064pt.
-<main_paper_files/figure-latex/causcash-1.pdf, id=172, 469.755pt x 325.215pt>
+<main_paper_files/figure-latex/causcash-1.pdf, id=160, 469.755pt x 325.215pt>
 File: main_paper_files/figure-latex/causcash-1.pdf Graphic file (type pdf)
 <use main_paper_files/figure-latex/causcash-1.pdf>
-Package pdftex.def Info: main_paper_files/figure-latex/causcash-1.pdf  used on input line 461.
+Package pdftex.def Info: main_paper_files/figure-latex/causcash-1.pdf  used on input line 452.
 (pdftex.def)             Requested size: 352.31538pt x 243.91064pt.
-<main_paper_files/figure-latex/causconstr-1.pdf, id=174, 469.755pt x 325.215pt>
+
+
+[12 <./main_paper_files/figure-latex/allyears-1.pdf>]
+
+[13 <./main_paper_files/figure-latex/causprices-1.pdf> <./main_paper_files/figure-latex/causcpi-1.pdf>]
+<main_paper_files/figure-latex/causconstr-1.pdf, id=189, 469.755pt x 325.215pt>
 File: main_paper_files/figure-latex/causconstr-1.pdf Graphic file (type pdf)
 <use main_paper_files/figure-latex/causconstr-1.pdf>
-Package pdftex.def Info: main_paper_files/figure-latex/causconstr-1.pdf  used on input line 472.
+Package pdftex.def Info: main_paper_files/figure-latex/causconstr-1.pdf  used on input line 463.
 (pdftex.def)             Requested size: 352.31538pt x 243.91064pt.
 
 
-[13 <./main_paper_files/figure-latex/causcpi-1.pdf>]
-
-[14 <./main_paper_files/figure-latex/causcpi-2.pdf> <./main_paper_files/figure-latex/causcash-1.pdf>]
-
-[15 <./main_paper_files/figure-latex/causconstr-1.pdf>]
-<main_paper_files/figure-latex/caussynthfig-1.pdf, id=215, 469.755pt x 325.215pt>
+[14 <./main_paper_files/figure-latex/causcash-1.pdf>]
+<main_paper_files/figure-latex/caussynthfig-1.pdf, id=203, 469.755pt x 325.215pt>
 File: main_paper_files/figure-latex/caussynthfig-1.pdf Graphic file (type pdf)
 <use main_paper_files/figure-latex/caussynthfig-1.pdf>
-Package pdftex.def Info: main_paper_files/figure-latex/caussynthfig-1.pdf  used on input line 490.
+Package pdftex.def Info: main_paper_files/figure-latex/caussynthfig-1.pdf  used on input line 481.
 (pdftex.def)             Requested size: 352.31538pt x 243.91064pt.
 
+
+[15 <./main_paper_files/figure-latex/causconstr-1.pdf>]
 
 [16 <./main_paper_files/figure-latex/caussynthfig-1.pdf>]
 
@@ -732,25 +725,25 @@ Package pdftex.def Info: main_paper_files/figure-latex/caussynthfig-1.pdf  used 
 
 [18]
 
-[19]
+[19{/home/mohamed/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc}]
 
-[20{/home/mohamed/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc}]
-<rf_imp_plot.png, id=259, 372.39125pt x 279.0425pt>
+[20]
+<rf_imp_plot.png, id=258, 372.39125pt x 279.0425pt>
 File: rf_imp_plot.png Graphic file (type png)
 <use rf_imp_plot.png>
-Package pdftex.def Info: rf_imp_plot.png  used on input line 641.
+Package pdftex.def Info: rf_imp_plot.png  used on input line 632.
 (pdftex.def)             Requested size: 328.83607pt x 246.40546pt.
 
 
-[21]
+[21 <./rf_imp_plot.png>]
 
-[22 <./rf_imp_plot.png>]
-Overfull \hbox (59.03194pt too wide) in paragraph at lines 672--676
+[22]
+Overfull \hbox (59.03194pt too wide) in paragraph at lines 664--668
 \T1/lmr/m/n/10 States.'' 2022. \T1/lmr/m/it/12 Jour-nal of Hous-ing Eco-nomics \T1/lmr/m/n/10 57. https://doi.org/[]https://doi.org/10.1016/j.jhe.2022.101857%7D,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 689--691
+Underfull \hbox (badness 10000) in paragraph at lines 681--683
 []$\T1/lmr/m/n/10 https : / / www2 . minneapolismn . gov / business -[] services / planning -[] zoning / amendments / adopted -[] proposed /
  []
 
@@ -768,18 +761,18 @@ LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 13881 strings out of 475290
- 216402 string characters out of 5768908
- 625117 words of memory out of 5000000
- 36382 multiletter control sequences out of 15000+600000
+ 13875 strings out of 475290
+ 215960 string characters out of 5768908
+ 626108 words of memory out of 5000000
+ 36374 multiletter control sequences out of 15000+600000
  632807 words of font info for 87 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  89i,12n,93p,1930b,582s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmex10.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi12.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi8.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr6.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr8.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri12.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy8.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt12.pfb></home/mohamed/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on main_paper.pdf (24 pages, 2582446 bytes).
+Output written on main_paper.pdf (24 pages, 2582630 bytes).
 PDF statistics:
- 474 PDF objects out of 1000 (max. 8388607)
- 389 compressed objects within 4 object streams
- 106 named destinations out of 1000 (max. 500000)
- 200 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 475 PDF objects out of 1000 (max. 8388607)
+ 392 compressed objects within 4 object streams
+ 108 named destinations out of 1000 (max. 500000)
+ 203 words of extra memory for PDF output out of 10000 (max. 10000000)
 

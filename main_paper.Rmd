@@ -51,14 +51,14 @@ plot_theme = theme_minimal() + theme(
 ggplot2::theme_set(plot_theme)
 
 doacs = FALSE
-docaus = FALSE
+docaus = TRUE
 compute_models = FALSE
 ```
 
 \doublespacing
 \fontsize{12}{22}
 
-# Introduction
+# Introduction (Max)
 Between 2020 and the present one thing is clear: housing prices have exploded. What isn't clear is why. The COVID-19 pandemic, radical changes in zoning law, and demographic shifts --- and their interplay --- confound a quick assessment of so clear a trend. With publicly available census and housing data, this paper looks to assess the major factors behind the rising price of housing. We begin with a discussion of market data from Realtor.com and expand into an analysis of the American Community Survey dataset.
 
 # Literature Review
@@ -66,7 +66,7 @@ Kendall and Tulip (2018) quantify the effect of zoning on detached house prices 
 
 B. Yörük (2022) studies the effect of U.S. state-level COVID-19 policies on housing market activity using daily housing market data from Zillow.
 Compared to 2019, Yörük finds that, "the closure of non-essential businesses in certain states was associated with up to an 11-percentage point decrease in new home listings and a 3.5 percentage point decrease in total inventory..."
-and although restrictions on mass gatherings and school closures did not have a significant impact on the percentage change in new house listings, the did on the percentage change in overall inventory.
+and although restrictions on mass gatherings and school closures did not have a significant impact on the percentage change in new house listings, they did on the percentage change in overall inventory.
 With respect to the median listing prices of houses, Yörük discovers, "a moderately increasing trend" after July 2020 which, "[remains] positive relative to its level during the same time period [2019]."
 We aim to verify Yörük's finding with data from Realtor.com.
 
@@ -139,7 +139,7 @@ We arrive at a model of the form
 With $\bar{R}^2=0.6$ and $F=489.5$.
 Figure \@ref(fig:rdcprice) depicts the relationship between $medianListingPrice$ against $year$, with data points in blue and our predicted $\widehat{medianListingPrice}$ in red:
 
-(\begin{figure}[H]
+\begin{figure}[H]
 	\centering
   \includegraphics[page=1,width=.4\textwidth]{Rplots.pdf}
 	\caption{Median Listing Price vs. Year Violin Plot}
@@ -460,7 +460,6 @@ plotConstrVars(c("sold_corrected", "cpi_mspus"))
 While the methodology does not imply a causal interpretation, it seems highly likely that trends in the housing price are caused by trends in construction costs. Supply costs are a major factor in the cost of almost all goods, and it is hard to conceive of any confounding variable correlated with price and supply cost that could dwarf the effect of supply. Additionally, we graph inflation-controlled housing prices (cpi_mspus) and the inflation-controlled houses sold index (cpi_sold) in Figure \@ref(fig:causcpi) to show that trends in both coincide.
 ```{r causcpi, fig.cap = 'Comparison between cpi mspus and CPI-controlled houses sold index'}
 plotConstrVars(c("cpi_mspus", "cpi_sold"))
-plotConstrVars("cpi_sold")
 ```
 
 One factor that could affect house sales price on the demand side is the interest rate: a lower interest rate increases the demand for housing due to more favorable terms on mortgages. To eliminate this factor, we also use the price of houses purchased with cash (full price up front with no mortgage or loan) which should be unaffected by the interest rate. This specification is presented in Figure \@ref(fig:causcash) After controlling with the houses sold index, we see the same general trend, albeit with much more volatility. The average price is stable until 2018, starts decreasing until 2020, then seems to stabilize again.
@@ -762,7 +761,7 @@ save(SVM_model, file="SVM_model.RData")
 
 ```
 
-```{r results_table}
+```{r resultstable}
 
 # ===== Results =====
 
@@ -785,7 +784,7 @@ results %>%
   mutate("Adj R2" = str_sub(Adj.R2, 1, -2) %>% as.numeric / 100) %>%
   select(-Adj.R2) %>%
   relocate(RMSE, .after = "Adj R2") %>%
-  kable(format = "markdown", caption = "a")
+  kable(format = "markdown", caption = "Out of Sample Model Performance Metrics")
 ```
 
 The table shows the adjusted $R^2$ and RMSE for each of our fitted models. We find that the linear regression is able to explain the most variance in the data, as it has the highest $R^2$. However, this is partially misleading, since the random forest was unable to use PUMA codes, and instead used continuous latitude and longitude values. The SVM and RF models both had lower RMSE values than linear regression, indicating that there is no clear model that outperforms any other in our forecasting.
@@ -804,16 +803,40 @@ if(compute_models){
 
 Additionally, fitting a random tree model provides us with another metric for feature importance. Similar to statistical significance in linear models, feature importance from random forests provide a measure of how our forecast values deviate from the true value as we remove a feature. Clearly we see that household income (hhincome), is the most significant feature in forecasting the value of a home. Additionally, the number of rooms, population of the nearest metropolitan zone (metpop10), the population density in a PUMA area (density), location (lat, lng), and market indicators are the most significant.
 
-Our modeling provides poor forecasting performance, but provides additional insight into useful factors for housing prices. Roughly half of the most important features are taken from the RDC data, signifiying the value of external market data when attempting to value an individuals home.
+Our modeling provides poor forecasting performance, but provides additional insight into useful factors for housing prices. Roughly half of the most important features are taken from the RDC data, signifying the value of external market data when attempting to value an individuals home.
 
 # Conclusion
 With publicly available housing market and census data, this paper aimed to uncover the features explaining the increase of housing prices from 2020 on.
 Yörük's (2022) analysis of a Zillow dataset and our own analysis of the Realtor.com dataset revealed that a sudden decrease in active listings --- and consequently an increase in pending ratio --- drove up median listing prices. Our analysis indicates that this trend continues beyond 2022.
 
-Mohamed - write about census findings
+By examining the trends of supply costs alongside of housing prices, we notice a decrease in housing prices relative to supply cost since 2012, which we interpret as meaning increases in housing prices are likely due to increasing supply costs. We also examine a case of changing zoning laws in Minneapolis and find no significant effect.
+
+By combining household and a market information for forecasting, we attempt to predict rent for households. Results from our analysis suggest that both market and household information are both critical for forecasting. However, our datsets do not contain sufficient information for accurate forecasting values, and collecting more information on economic, area, and social information will provide more accurate predictions. 
 
 \newpage
 
 # References
+
+<div id="refs"></div>
+
+\newpage
+
+# Appendix
+
+```{r}
+contributions = tribble(
+  ~Task, ~Contribution,
+  "Data Cleaning", "Mohamed",
+  "Realtor.com Analysis", "Max",
+  "ACS Analysis", "Alejandro",
+  "Specific Factors Analaysis", "Mohamed",
+  "Forecasting Analysis", "Emmet",
+  "Introduction", "Max",
+  "Conclusion", "Everyone",
+  "Paper Formatting", "Mohamed",
+  "Presentation", "Everyone")
+knitr::kable(contributions)
+```
+
 
 
